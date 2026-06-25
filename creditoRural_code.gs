@@ -294,39 +294,52 @@ function ativarDesativarLinha(idLinha, ativo) {
 }
 
 function obterLinhaCompleta(idLinha) {
-  /**
-   * Retorna todas as informações de uma linha
-   */
-  const dados = SHEET_LINHAS.getDataRange().getValues();
-  const headers = dados[0];
-  const idIdx = headers.indexOf("ID");
+  try {
+    const dados = SHEET_LINHAS.getDataRange().getValues();
+    if (!dados || dados.length <= 1) return {};
 
-  for (let i = 1; i < dados.length; i++) {
-    if (dados[i][idIdx] === idLinha) {
-      const linha = {};
-      headers.forEach((header, idx) => {
-        linha[header] = dados[i][idx];
-      });
-      return linha;
+    const headers = dados[0];
+    const idIdx = headers.indexOf("ID");
+
+    for (let i = 1; i < dados.length; i++) {
+      if (dados[i][idIdx] === idLinha) {
+        const linha = {};
+        headers.forEach((header, idx) => {
+          linha[header] = dados[i][idx] || "";
+        });
+        return linha;
+      }
     }
+    return {};
+  } catch (e) {
+    Logger.log("Erro em obterLinhaCompleta: " + e);
+    return {};
   }
-  return null;
 }
 
 function listarTodasAsLinhas() {
-  /**
-   * Retorna todas as linhas cadastradas
-   */
-  const dados = SHEET_LINHAS.getDataRange().getValues();
-  const headers = dados[0];
+  try {
+    const dados = SHEET_LINHAS.getDataRange().getValues();
+    if (!dados || dados.length <= 1) return [];
 
-  return dados.slice(1).map(linha => {
-    const obj = {};
-    headers.forEach((header, idx) => {
-      obj[header] = linha[idx];
-    });
-    return obj;
-  });
+    const headers = dados[0];
+    if (!headers) return [];
+
+    return dados.slice(1).map(linha => {
+      try {
+        const obj = {};
+        headers.forEach((header, idx) => {
+          obj[header] = linha[idx] || "";
+        });
+        return obj;
+      } catch (e) {
+        return null;
+      }
+    }).filter(obj => obj !== null);
+  } catch (e) {
+    Logger.log("Erro em listarTodasAsLinhas: " + e);
+    return [];
+  }
 }
 
 // ==================== INTERFACE WEB ====================
@@ -523,16 +536,32 @@ window.mostrarResultados = function(linhas) {
 };
 
 window.carregarLinhasAdministrativo = function() {
-  google.script.run.withSuccessHandler(function(linhas) {
-    const select = document.getElementById('linhaParaEditar');
-    select.innerHTML = '<option value="">-- Selecione uma linha --</option>';
-    linhas.forEach(linha => {
-      const option = document.createElement('option');
-      option.value = linha['ID'];
-      option.textContent = linha['Nome Linha'];
-      select.appendChild(option);
-    });
-  }).listarTodasAsLinhas();
+  google.script.run
+    .withSuccessHandler(function(linhas) {
+      const select = document.getElementById('linhaParaEditar');
+      select.innerHTML = '<option value="">-- Selecione uma linha --</option>';
+
+      if (!linhas || !Array.isArray(linhas)) {
+        console.warn('Linhas não é um array válido');
+        return;
+      }
+
+      linhas.forEach(linha => {
+        try {
+          const option = document.createElement('option');
+          option.value = linha['ID'] || '';
+          option.textContent = linha['Nome Linha'] || 'Sem nome';
+          select.appendChild(option);
+        } catch (e) {
+          console.error('Erro ao processar linha:', e);
+        }
+      });
+    })
+    .withFailureHandler(function(error) {
+      console.error('Erro ao carregar linhas:', error);
+      alert('Erro ao carregar linhas: ' + error);
+    })
+    .listarTodasAsLinhas();
 };
 
 window.carregarDadosLinha = function() {
@@ -541,17 +570,30 @@ window.carregarDadosLinha = function() {
     document.getElementById('edicaoConteudo').innerHTML = '';
     return;
   }
-  google.script.run.withSuccessHandler(window.mostrarFormularioEdicao)
+  google.script.run
+    .withSuccessHandler(window.mostrarFormularioEdicao)
+    .withFailureHandler(function(error) {
+      console.error('Erro ao carregar linha:', error);
+      document.getElementById('edicaoConteudo').innerHTML = '<p style="color: red;">Erro ao carregar dados da linha</p>';
+    })
     .obterLinhaCompleta(idLinha);
 };
 
 window.mostrarFormularioEdicao = function(linha) {
+  if (!linha || typeof linha !== 'object') {
+    document.getElementById('edicaoConteudo').innerHTML = '<p style="color: red;">Nenhuma linha selecionada</p>';
+    return;
+  }
+
   let html = '<div style="margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 5px;">';
-  html += '<h3 style="margin-bottom: 20px; color: #1f4788;">' + linha['Nome Linha'] + '</h3>';
-  html += '<p><strong>Taxa:</strong> ' + linha['Taxa Mín (%)'] + '% - ' + linha['Taxa Máx (%)'] + '%</p>';
-  html += '<p><strong>Prazo:</strong> ' + linha['Prazo (meses)'] + ' meses (Carência: ' + linha['Carência (meses)'] + ' meses)</p>';
+  html += '<h3 style="margin-bottom: 20px; color: #1f4788;">' + (linha['Nome Linha'] || 'Sem nome') + '</h3>';
+  html += '<p><strong>Finalidade:</strong> ' + (linha['Finalidade Principal'] || 'N/A') + '</p>';
+  html += '<p><strong>Taxa:</strong> ' + (linha['Taxa Mín (%)'] || 'N/A') + '% - ' + (linha['Taxa Máx (%)'] || 'N/A') + '%</p>';
+  html += '<p><strong>Prazo:</strong> ' + (linha['Prazo (meses)'] || 'N/A') + ' meses</p>';
+  html += '<p><strong>Carência:</strong> ' + (linha['Carência (meses)'] || '0') + ' meses</p>';
   html += '<p><strong>Limite:</strong> R$ ' + window.formatarMoeda(linha['Limite Min (R$)']) + ' a R$ ' + window.formatarMoeda(linha['Limite Máx (R$)']) + '</p>';
-  html += '<p><strong>Status:</strong> ' + linha['Status (Ativa/Inativa)'] + '</p>';
+  html += '<p><strong>Requisitos:</strong> ' + (linha['Requisitos'] || 'N/A') + '</p>';
+  html += '<p><strong>Status:</strong> ' + (linha['Status (Ativa/Inativa)'] || 'Ativa') + '</p>';
   html += '</div>';
   document.getElementById('edicaoConteudo').innerHTML = html;
 };
