@@ -245,17 +245,28 @@ function validarFinalidade(finalidadeBuscada, finalidadeLinha) {
 
 function registrarConsulta(parametros, qtdResultados) {
   try {
-    const dataHora = new Date();
+    if (!SHEET_HISTORICO) {
+      Logger.log("SHEET_HISTORICO não inicializado");
+      return;
+    }
+
+    const dataHora = new Date().toLocaleString('pt-BR');
+    const finalidade = parametros.finalidade || "Não especificado";
+    const enquadramento = parametros.enquadramento || "Não especificado";
+    const resultado = `${qtdResultados} linha(s) encontrada(s)`;
+
     SHEET_HISTORICO.appendRow([
       dataHora,
       "Consulta Linha",
-      parametros.finalidade || "Não especificado",
-      parametros.enquadramento || "Não especificado",
-      `${qtdResultados} linha(s) encontrada(s)`,
+      finalidade,
+      enquadramento,
+      resultado,
       Session.getActiveUser().getEmail()
     ]);
+
+    Logger.log("Consulta registrada: " + finalidade + " - " + resultado);
   } catch (e) {
-    Logger.log("Erro ao registrar consulta: " + e);
+    Logger.log("Erro ao registrar consulta: " + e.toString());
   }
 }
 
@@ -594,6 +605,7 @@ window.carregarDadosLinha = function() {
     '<h3 style="margin-bottom: 20px; color: #1f4788;">' + nomeLinha + '</h3>' +
     '<p><strong>ID:</strong> ' + idLinha + '</p>' +
     '<p style="color: #666; font-style: italic;">Clique em editar para modificar os dados...</p>' +
+    '<button onclick="alert(\'Edição será implementada na próxima versão. ID: ' + idLinha + '\')" style="margin-top: 20px; background: #28a745;">✏️ Editar</button>' +
     '</div>';
 
   document.getElementById('edicaoConteudo').innerHTML = html;
