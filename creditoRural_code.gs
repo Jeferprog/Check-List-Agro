@@ -141,90 +141,106 @@ function inicializarSheetHistorico() {
 // ==================== MOTOR DE BUSCA E REGRAS ====================
 
 function buscarLinhas(parametros) {
-  /**
-   * Busca linhas de crédito baseado em parâmetros
-   * @param {Object} parametros - {produto, enquadramento, renda, finalidade}
-   * @returns {Array} Array de linhas compatíveis
-   */
+  try {
+    const dados = SHEET_LINHAS.getDataRange().getValues();
+    if (!dados || dados.length <= 1) return [];
 
-  const dados = SHEET_LINHAS.getDataRange().getValues();
-  const headers = dados[0];
-  const linhas = dados.slice(1);
+    const headers = dados[0];
+    const linhas = dados.slice(1);
 
-  const resultado = linhas
-    .filter(linha => {
-      // Verificar se está ativa
-      const statusIdx = headers.indexOf("Status (Ativa/Inativa)");
-      if (linha[statusIdx] !== "Ativa") return false;
+    const resultado = linhas
+      .filter(linha => {
+        try {
+          const statusIdx = headers.indexOf("Status (Ativa/Inativa)");
+          if (statusIdx === -1 || linha[statusIdx] !== "Ativa") return false;
 
-      // Validar enquadramento de renda
-      const enquadramentoIdx = headers.indexOf("Enquadramento (Renda Min/Max)");
-      if (!validarRenda(parametros.renda, linha[enquadramentoIdx])) return false;
+          const enquadramentoIdx = headers.indexOf("Enquadramento (Renda Min/Max)");
+          if (enquadramentoIdx === -1) return false;
 
-      // Validar finalidade
-      const finalidadesIdx = headers.indexOf("Finalidades (tags)");
-      if (!validarFinalidade(parametros.finalidade, linha[finalidadesIdx])) return false;
+          if (!validarRenda(parametros.renda, linha[enquadramentoIdx])) return false;
 
-      return true;
-    })
-    .map(linha => {
-      return {
-        id: linha[headers.indexOf("ID")],
-        nome: linha[headers.indexOf("Nome Linha")],
-        orgao: linha[headers.indexOf("Órgão/Instituição")],
-        finalidade: linha[headers.indexOf("Finalidade Principal")],
-        taxaMin: parseFloat(linha[headers.indexOf("Taxa Mín (%)")]),
-        taxaMax: parseFloat(linha[headers.indexOf("Taxa Máx (%)")]),
-        prazo: parseInt(linha[headers.indexOf("Prazo (meses)")]),
-        carencia: parseInt(linha[headers.indexOf("Carência (meses)")]),
-        limiteMin: parseInt(linha[headers.indexOf("Limite Min (R$)")]),
-        limiteMax: parseInt(linha[headers.indexOf("Limite Máx (R$)")]),
-        requisitos: linha[headers.indexOf("Requisitos")],
-        documentos: linha[headers.indexOf("Documentos Necessários")],
-        observacoes: linha[headers.indexOf("Observações")]
-      };
-    });
+          const finalidadesIdx = headers.indexOf("Finalidades (tags)");
+          if (finalidadesIdx === -1) return false;
 
-  // Registrar consulta no histórico
-  registrarConsulta(parametros, resultado.length);
+          if (!validarFinalidade(parametros.finalidade, linha[finalidadesIdx])) return false;
 
-  return resultado;
+          return true;
+        } catch (e) {
+          return false;
+        }
+      })
+      .map(linha => {
+        try {
+          return {
+            id: linha[headers.indexOf("ID")] || "",
+            nome: linha[headers.indexOf("Nome Linha")] || "Sem nome",
+            orgao: linha[headers.indexOf("Órgão/Instituição")] || "",
+            finalidade: linha[headers.indexOf("Finalidade Principal")] || "",
+            taxaMin: parseFloat(linha[headers.indexOf("Taxa Mín (%)")]) || 0,
+            taxaMax: parseFloat(linha[headers.indexOf("Taxa Máx (%)")]) || 0,
+            prazo: parseInt(linha[headers.indexOf("Prazo (meses)")]) || 0,
+            carencia: parseInt(linha[headers.indexOf("Carência (meses)")]) || 0,
+            limiteMin: parseInt(linha[headers.indexOf("Limite Min (R$)")]) || 0,
+            limiteMax: parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0,
+            requisitos: linha[headers.indexOf("Requisitos")] || "",
+            documentos: linha[headers.indexOf("Documentos Necessários")] || "",
+            observacoes: linha[headers.indexOf("Observações")] || ""
+          };
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(item => item !== null);
+
+    registrarConsulta(parametros, resultado.length);
+    return resultado;
+  } catch (e) {
+    Logger.log("Erro em buscarLinhas: " + e);
+    return [];
+  }
 }
 
 function validarRenda(renda, enquadramentoTexto) {
-  /**
-   * Valida se a renda do cliente se enquadra na linha
-   */
-  if (enquadramentoTexto.includes("Conforme análise")) return true;
+  try {
+    if (!enquadramentoTexto || enquadramentoTexto === "") return true;
+    if (typeof enquadramentoTexto !== "string") return true;
 
-  const partes = enquadramentoTexto.split("/");
-  if (partes.length < 2) return true;
+    if (enquadramentoTexto.includes("Conforme análise")) return true;
 
-  const minTexto = partes[0].trim();
-  const maxTexto = partes[1].trim();
+    const partes = enquadramentoTexto.split("/");
+    if (partes.length < 2) return true;
 
-  if (minTexto === "Sem limite") {
-    // Sem limite mínimo, verificar máximo
-    const max = parseInt(maxTexto.replace(/\D/g, ""));
-    return renda <= max;
+    const minTexto = partes[0].trim();
+    const maxTexto = partes[1].trim();
+
+    if (minTexto === "Sem limite") {
+      const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
+      return renda <= max;
+    }
+
+    const min = parseInt(minTexto.replace(/\D/g, "")) || 0;
+    const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
+
+    return renda >= min && renda <= max;
+  } catch (e) {
+    return true;
   }
-
-  const min = parseInt(minTexto.replace(/\D/g, ""));
-  const max = parseInt(maxTexto.replace(/\D/g, ""));
-
-  return renda >= min && renda <= max;
 }
 
 function validarFinalidade(finalidadeBuscada, finalidadeLinha) {
-  /**
-   * Verifica se a finalidade buscada está presente na linha
-   */
-  if (!finalidadeBuscada || !finalidadeLinha) return true;
+  try {
+    if (!finalidadeBuscada || !finalidadeLinha) return true;
+    if (typeof finalidadeBuscada !== "string" || typeof finalidadeLinha !== "string") return true;
 
-  const tags = finalidadeLinha.toLowerCase().split(",").map(t => t.trim());
-  const buscaTermos = finalidadeBuscada.toLowerCase().split(",").map(t => t.trim());
+    const tags = finalidadeLinha.toLowerCase().split(",").map(t => t.trim()).filter(t => t);
+    const buscaTermos = finalidadeBuscada.toLowerCase().split(",").map(t => t.trim()).filter(t => t);
 
-  return buscaTermos.some(termo => tags.some(tag => tag.includes(termo) || termo.includes(tag)));
+    if (tags.length === 0 || buscaTermos.length === 0) return true;
+
+    return buscaTermos.some(termo => tags.some(tag => tag.includes(termo) || termo.includes(tag)));
+  } catch (e) {
+    return true;
+  }
 }
 
 function registrarConsulta(parametros, qtdResultados) {
@@ -316,12 +332,7 @@ function listarTodasAsLinhas() {
 // ==================== INTERFACE WEB ====================
 
 function doGet() {
-  /**
-   * Retorna o HTML da interface web
-   */
-  return HtmlService.createHtmlOutput(obterHTML())
-    .setWidth(1200)
-    .setHeight(800);
+  return obterHTML();
 }
 
 function obterHTML() {
