@@ -244,18 +244,30 @@ function validarFinalidade(finalidadeBuscada, finalidadeLinha) {
 }
 
 function registrarConsulta(parametros, qtdResultados) {
-  /**
-   * Registra no histórico cada consulta realizada
-   */
-  const dataHora = new Date();
-  SHEET_HISTORICO.appendRow([
-    dataHora,
-    "Consulta Linha",
-    parametros.finalidade || "Não especificado",
-    parametros.enquadramento || "Não especificado",
-    `${qtdResultados} linha(s) encontrada(s)`,
-    Session.getActiveUser().getEmail()
-  ]);
+  try {
+    const dataHora = new Date();
+    SHEET_HISTORICO.appendRow([
+      dataHora,
+      "Consulta Linha",
+      parametros.finalidade || "Não especificado",
+      parametros.enquadramento || "Não especificado",
+      `${qtdResultados} linha(s) encontrada(s)`,
+      Session.getActiveUser().getEmail()
+    ]);
+  } catch (e) {
+    Logger.log("Erro ao registrar consulta: " + e);
+  }
+}
+
+function obterHistorico() {
+  try {
+    const dados = SHEET_HISTORICO.getDataRange().getValues();
+    if (!dados || dados.length <= 1) return [];
+    return dados.slice(1);
+  } catch (e) {
+    Logger.log("Erro ao obter histórico: " + e);
+    return [];
+  }
 }
 
 // ==================== FUNÇÕES ADMINISTRATIVAS ====================
@@ -567,18 +579,24 @@ window.carregarLinhasAdministrativo = function() {
 };
 
 window.carregarDadosLinha = function() {
-  const idLinha = document.getElementById('linhaParaEditar').value;
+  const selectElement = document.getElementById('linhaParaEditar');
+  const idLinha = selectElement.value;
+
   if (!idLinha) {
     document.getElementById('edicaoConteudo').innerHTML = '';
     return;
   }
-  google.script.run
-    .withSuccessHandler(window.mostrarFormularioEdicao)
-    .withFailureHandler(function(error) {
-      console.error('Erro ao carregar linha:', error);
-      document.getElementById('edicaoConteudo').innerHTML = '<p style="color: red;">Erro ao carregar dados da linha</p>';
-    })
-    .obterLinhaCompleta(idLinha);
+
+  const nomeLinhaElement = selectElement.options[selectElement.selectedIndex];
+  const nomeLinha = nomeLinhaElement ? nomeLinhaElement.text : 'Desconhecido';
+
+  const html = '<div style="margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 5px;">' +
+    '<h3 style="margin-bottom: 20px; color: #1f4788;">' + nomeLinha + '</h3>' +
+    '<p><strong>ID:</strong> ' + idLinha + '</p>' +
+    '<p style="color: #666; font-style: italic;">Clique em editar para modificar os dados...</p>' +
+    '</div>';
+
+  document.getElementById('edicaoConteudo').innerHTML = html;
 };
 
 window.mostrarFormularioEdicao = function(linha) {
@@ -601,8 +619,37 @@ window.mostrarFormularioEdicao = function(linha) {
 };
 
 window.carregarHistorico = function() {
-  const html = '<table><thead><tr><th>Data</th><th>Tipo</th><th>Finalidade</th><th>Resultado</th></tr></thead><tbody><tr><td colspan="4" style="text-align: center; color: #999;">Aguardando carregamento...</td></tr></tbody></table>';
-  document.getElementById('tabelaHistorico').innerHTML = html;
+  google.script.run
+    .withSuccessHandler(function(historico) {
+      let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">' +
+        '<thead style="background: #f5f5f5;">' +
+        '<tr><th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Data</th>' +
+        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Tipo</th>' +
+        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Finalidade</th>' +
+        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Resultado</th></tr>' +
+        '</thead><tbody>';
+
+      if (!historico || !Array.isArray(historico) || historico.length === 0) {
+        html += '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #999;">Nenhuma consulta registrada ainda</td></tr>';
+      } else {
+        historico.forEach(item => {
+          html += '<tr style="border-bottom: 1px solid #eee;">' +
+            '<td style="padding: 10px;">' + (item[0] || '-') + '</td>' +
+            '<td style="padding: 10px;">' + (item[1] || '-') + '</td>' +
+            '<td style="padding: 10px;">' + (item[2] || '-') + '</td>' +
+            '<td style="padding: 10px;">' + (item[4] || '-') + '</td>' +
+            '</tr>';
+        });
+      }
+
+      html += '</tbody></table>';
+      document.getElementById('tabelaHistorico').innerHTML = html;
+    })
+    .withFailureHandler(function(error) {
+      console.error('Erro ao carregar histórico:', error);
+      document.getElementById('tabelaHistorico').innerHTML = '<p style="color: red;">Erro ao carregar histórico: ' + error + '</p>';
+    })
+    .obterHistorico();
 };
 
 window.formatarMoeda = function(valor) {
