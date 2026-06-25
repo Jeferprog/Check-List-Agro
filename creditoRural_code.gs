@@ -319,25 +319,39 @@ function obterLinhaCompleta(idLinha) {
 
 function listarTodasAsLinhas() {
   try {
+    if (!SHEET_LINHAS) {
+      Logger.log("SHEET_LINHAS não inicializado");
+      return [];
+    }
+
     const dados = SHEET_LINHAS.getDataRange().getValues();
-    if (!dados || dados.length <= 1) return [];
+    Logger.log("Dados recebidos: " + dados.length + " linhas");
+
+    if (!dados || dados.length <= 1) {
+      Logger.log("Sem dados ou apenas header");
+      return [];
+    }
 
     const headers = dados[0];
-    if (!headers) return [];
+    if (!headers) {
+      Logger.log("Sem headers");
+      return [];
+    }
 
-    return dados.slice(1).map(linha => {
-      try {
-        const obj = {};
-        headers.forEach((header, idx) => {
-          obj[header] = linha[idx] || "";
-        });
-        return obj;
-      } catch (e) {
-        return null;
+    const resultado = [];
+    for (let i = 1; i < dados.length; i++) {
+      const linha = dados[i];
+      const obj = {};
+      for (let j = 0; j < headers.length; j++) {
+        obj[headers[j]] = linha[j] || "";
       }
-    }).filter(obj => obj !== null);
+      resultado.push(obj);
+    }
+
+    Logger.log("Retornando " + resultado.length + " linhas");
+    return resultado;
   } catch (e) {
-    Logger.log("Erro em listarTodasAsLinhas: " + e);
+    Logger.log("Erro em listarTodasAsLinhas: " + e.toString());
     return [];
   }
 }
@@ -538,28 +552,47 @@ window.mostrarResultados = function(linhas) {
 window.carregarLinhasAdministrativo = function() {
   google.script.run
     .withSuccessHandler(function(linhas) {
+      console.log('Tipo de linhas:', typeof linhas);
+      console.log('É array?', Array.isArray(linhas));
+      console.log('Valor de linhas:', linhas);
+
       const select = document.getElementById('linhaParaEditar');
       select.innerHTML = '<option value="">-- Selecione uma linha --</option>';
 
-      if (!linhas || !Array.isArray(linhas)) {
-        console.warn('Linhas não é um array válido');
+      if (!linhas) {
+        console.warn('Linhas é null ou undefined');
+        select.innerHTML += '<option disabled>Nenhuma linha disponível</option>';
         return;
       }
 
-      linhas.forEach(linha => {
+      if (!Array.isArray(linhas)) {
+        console.error('Linhas não é um array válido. Tipo:', typeof linhas);
+        select.innerHTML += '<option disabled>Erro ao carregar linhas</option>';
+        return;
+      }
+
+      console.log('Total de linhas:', linhas.length);
+
+      if (linhas.length === 0) {
+        select.innerHTML += '<option disabled>Nenhuma linha cadastrada</option>';
+        return;
+      }
+
+      linhas.forEach((linha, idx) => {
         try {
           const option = document.createElement('option');
           option.value = linha['ID'] || '';
-          option.textContent = linha['Nome Linha'] || 'Sem nome';
+          option.textContent = linha['Nome Linha'] || ('Linha ' + idx);
           select.appendChild(option);
         } catch (e) {
-          console.error('Erro ao processar linha:', e);
+          console.error('Erro ao processar linha ' + idx + ':', e);
         }
       });
     })
     .withFailureHandler(function(error) {
       console.error('Erro ao carregar linhas:', error);
-      alert('Erro ao carregar linhas: ' + error);
+      const select = document.getElementById('linhaParaEditar');
+      select.innerHTML = '<option disabled>Erro: ' + error + '</option>';
     })
     .listarTodasAsLinhas();
 };
