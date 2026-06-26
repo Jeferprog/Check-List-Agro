@@ -257,19 +257,26 @@ function validarProduto(produtoBuscado, linha, headers) {
    */
   try {
     if (!produtoBuscado || typeof produtoBuscado !== "string") return true;
-    const termo = produtoBuscado.trim().toLowerCase();
+
+    // Normaliza: minúsculas e remove acentos (ex: "café" -> "cafe")
+    const normalizar = txt => String(txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    const termo = normalizar(produtoBuscado.trim());
     if (termo === "") return true;
 
     const camposRelevantes = [
-      "Nome Linha", "Finalidade Principal", "Finalidades (tags)", "Observações"
+      "Nome Linha", "Finalidade Principal", "Finalidades (tags)",
+      "Itens Financiáveis", "Documentos Necessários", "Observações"
     ];
-    const textoBusca = camposRelevantes
+    const textoBusca = normalizar(camposRelevantes
       .map(c => {
         const idx = headers.indexOf(c);
         return idx === -1 ? "" : String(linha[idx] || "");
       })
-      .join(" ")
-      .toLowerCase();
+      .join(" "));
 
     // Quebra a busca em palavras: basta uma palavra casar para aceitar
     const palavras = termo.split(/\s+/).filter(p => p.length >= 3);
