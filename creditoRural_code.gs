@@ -148,7 +148,8 @@ function inicializarSheetConfig() {
     ["Juros Base (Selic)", "15%", "percent", "Taxa Selic de referência"],
     ["Ano Fiscal", "2025/2026", "text", "Plano Safra atual"],
     ["Contato Suporte", "agro@cresol.com.br", "email", "E-mail para suporte"],
-    ["Últimas Linhas Adicionadas", "Pronaf Irrigação", "text", "Informação das novas linhas"]
+    ["Últimas Linhas Adicionadas", "Pronaf Irrigação", "text", "Informação das novas linhas"],
+    ["Link Consulta Crédito (SICOR/CACR)", "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr", "url", "Link para consulta de crédito já tomado (SICOR/CACR)"]
   ];
 
   configs.forEach(config => SHEET_CONFIG.appendRow(config));
@@ -214,7 +215,9 @@ function buscarLinhas(parametros) {
             documentos: linha[headers.indexOf("Documentos Necessários")] || "",
             observacoes: linha[headers.indexOf("Observações")] || "",
             itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || "",
-            culturas: linha[headers.indexOf("Culturas Financiadas")] || ""
+            culturas: linha[headers.indexOf("Culturas Financiadas")] || "",
+            limiteDisponivel: Math.max(0, (parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0) - (parametros.valorTomado || 0)),
+            valorTomado: parametros.valorTomado || 0
           };
         } catch (e) {
           return null;
@@ -567,6 +570,53 @@ function adicionarLinha(dados) {
   }
 }
 
+// Parâmetro de configuração que guarda o link de consulta (SICOR/CACR)
+const PARAM_LINK_CONSULTA = "Link Consulta Crédito (SICOR/CACR)";
+
+/**
+ * Retorna o link de consulta cadastrado na aba Configurações.
+ * Se não houver, devolve o link oficial do CACR como padrão.
+ */
+function obterLinkConsulta() {
+  try {
+    const padrao = "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr";
+    if (!SHEET_CONFIG) return padrao;
+
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_LINK_CONSULTA) {
+        const valor = String(dados[i][1] || "").trim();
+        return valor || padrao;
+      }
+    }
+    return padrao;
+  } catch (e) {
+    Logger.log("Erro em obterLinkConsulta: " + e.toString());
+    return "";
+  }
+}
+
+/**
+ * Salva (ou cria) o link de consulta na aba Configurações.
+ */
+function salvarLinkConsulta(url) {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_LINK_CONSULTA) {
+        SHEET_CONFIG.getRange(i + 1, 2).setValue(url);
+        return { sucesso: true };
+      }
+    }
+    // Não existe ainda: cria a linha de parâmetro
+    SHEET_CONFIG.appendRow([PARAM_LINK_CONSULTA, url, "url", "Link para consulta de crédito já tomado (SICOR/CACR)"]);
+    return { sucesso: true };
+  } catch (e) {
+    Logger.log("Erro em salvarLinkConsulta: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
 // ==================== INTERFACE WEB ====================
 
 function doGet() {
@@ -575,6 +625,7 @@ function doGet() {
 
 function obterHTML() {
   const dataAtualizacao = new Date().toLocaleDateString('pt-BR');
+  const linkConsulta = obterLinkConsulta();
   return HtmlService.createHtmlOutput(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -663,9 +714,16 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deixe em branco para ver todas as linhas do tipo selecionado.
 </small>
 </div>
+<div class="grid-2">
 <div class="form-group">
 <label>💰 Renda Bruta Anual (R$)</label>
 <input type="number" id="renda" placeholder="Ex: 150000" min="0" oninput="window.atualizarEnquadramento()">
+</div>
+<div class="form-group">
+<label>🌾 Valor já tomado na cultura (R$) <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional)</span></label>
+<input type="number" id="valorTomado" placeholder="Ex: 50000" min="0">
+<button type="button" onclick="window.abrirConsultaSicor()" style="margin-top: 8px; background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; width: 100%;">🔎 Consultar valor já financiado</button>
+</div>
 </div>
 <div class="form-group">
 <label>👤 Enquadramento Detectado</label>
@@ -707,6 +765,12 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <div class="alert alert-info">
 <strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito - editar, incluir e ativar/inativar.
 </div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">🔗 Link de Consulta de Crédito Tomado (SICOR/CACR)</label>
+<input type="text" id="linkConsultaInput" placeholder="https://..." style="margin-bottom: 10px;">
+<small style="color: #666; display: block; margin-bottom: 10px;">Este link é usado pelo botão "Consultar valor já financiado" na aba Consultar.</small>
+<button type="button" onclick="window.salvarLinkConsulta()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Link</button>
+</div>
 <div style="margin-bottom: 20px;">
 <button onclick="window.abrirFormularioNovaLinha()" style="background: #28a745;">➕ Incluir Nova Linha</button>
 </div>
@@ -724,6 +788,16 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 </div>
 
 <script>
+window.LINK_CONSULTA = '${linkConsulta}';
+
+window.abrirConsultaSicor = function() {
+  if (window.LINK_CONSULTA && window.LINK_CONSULTA.trim() !== '') {
+    window.open(window.LINK_CONSULTA, '_blank');
+  } else {
+    alert('O link de consulta ainda não foi configurado.\\nConfigure-o na aba Administrativo.');
+  }
+};
+
 window.mudarAba = function(event, abaId) {
   document.querySelectorAll('.tab-content').forEach(aba => aba.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -732,9 +806,35 @@ window.mudarAba = function(event, abaId) {
 
   if (abaId === 'admin') {
     window.carregarLinhasAdministrativo();
+    window.carregarLinkConsulta();
   } else if (abaId === 'historico') {
     window.carregarHistorico();
   }
+};
+
+window.carregarLinkConsulta = function() {
+  google.script.run
+    .withSuccessHandler(function(link) {
+      const input = document.getElementById('linkConsultaInput');
+      if (input) input.value = link || '';
+    })
+    .withFailureHandler(function(error) {
+      console.error('Erro ao carregar link:', error);
+    })
+    .obterLinkConsulta();
+};
+
+window.salvarLinkConsulta = function() {
+  const url = document.getElementById('linkConsultaInput').value.trim();
+  google.script.run
+    .withSuccessHandler(function() {
+      window.LINK_CONSULTA = url;
+      window.notificar('<strong>✓ Sucesso!</strong><br>Link de consulta salvo.');
+    })
+    .withFailureHandler(function(error) {
+      window.notificar('<strong>✕ Erro ao salvar:</strong><br>' + error, 'erro');
+    })
+    .salvarLinkConsulta(url);
 };
 
 window.produtosPorTipo = {
@@ -792,6 +892,7 @@ window.buscar = function() {
   const renda = parseInt(document.getElementById('renda').value) || 0;
   const enquadramento = document.getElementById('enquadramento').dataset.value || '';
   const finalidade = document.getElementById('finalidade').value;
+  const valorTomado = parseFloat(document.getElementById('valorTomado').value) || 0;
 
   if (!renda || !enquadramento || !finalidade) {
     alert('Por favor, preencha todos os campos obrigatórios');
@@ -810,7 +911,8 @@ window.buscar = function() {
       produto: produto,
       enquadramento: enquadramento,
       renda: renda,
-      finalidade: finalidade
+      finalidade: finalidade,
+      valorTomado: valorTomado
     });
 };
 
@@ -842,6 +944,23 @@ window.mostrarResultados = function(linhas) {
         html += '<div class="culturas-financiadas" style="margin-top: 8px; background: #fdf2e6; border-left: 4px solid #f58220; padding: 10px 12px; border-radius: 4px;">' +
           '<span style="font-weight: 600; color: #b3590f; font-size: 13px;">🌱 Culturas financiadas:</span>' +
           '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.culturas + '</div>' +
+          '</div>';
+      }
+      if (linha.valorTomado > 0) {
+        const esgotado = linha.limiteDisponivel <= 0;
+        const bg = esgotado ? '#fdecea' : '#eef6ee';
+        const cor = esgotado ? '#a4282b' : '#1f6b1f';
+        const borda = esgotado ? '#dc3545' : '#28a745';
+        const titulo = esgotado ? '⚠️ Limite possivelmente esgotado' : '💳 Limite disponível para a cultura';
+        let corpo = 'Limite máximo da linha: R$ ' + window.formatarMoeda(linha.limiteMax) +
+          ' &nbsp;|&nbsp; Já tomado: R$ ' + window.formatarMoeda(linha.valorTomado) +
+          '<br><strong>Disponível: R$ ' + window.formatarMoeda(linha.limiteDisponivel) + '</strong>';
+        if (esgotado) {
+          corpo += '<br><em style="font-size: 12px;">O valor já tomado atinge o teto desta linha para a cultura.</em>';
+        }
+        html += '<div style="margin-top: 8px; background: ' + bg + '; border-left: 4px solid ' + borda + '; padding: 10px 12px; border-radius: 4px;">' +
+          '<span style="font-weight: 600; color: ' + cor + '; font-size: 13px; display: block; margin-bottom: 4px;">' + titulo + '</span>' +
+          '<div style="color: #333; font-size: 13px;">' + corpo + '</div>' +
           '</div>';
       }
       html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
