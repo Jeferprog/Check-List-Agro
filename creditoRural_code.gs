@@ -684,141 +684,62 @@ window.exportarPDF = function() {
     return;
   }
 
-  const titulo = document.querySelector('h2') ? document.querySelector('h2').textContent : 'Linhas de Crédito Rural';
   const conteudo = resultadoDiv.innerHTML;
   const dataAtual = new Date().toLocaleDateString('pt-BR');
+  const horaAtual = new Date().toLocaleTimeString('pt-BR');
 
-  const htmlPDF = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>Relatório de Crédito Rural</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background: white;
-    padding: 20px;
-  }
-  .header {
-    background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 10px;
-    margin-bottom: 30px;
-    page-break-after: avoid;
-  }
-  .header h1 { font-size: 28px; margin-bottom: 10px; }
-  .header p { font-size: 14px; opacity: 0.9; }
-  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; font-size: 13px; }
-  .meta-item { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 4px; }
-  .content { margin-top: 20px; }
-  .linha-card {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 20px;
-    margin-bottom: 20px;
-    page-break-inside: avoid;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  .linha-card h3 {
-    color: #1f4788;
-    margin-bottom: 10px;
-    font-size: 18px;
-    border-bottom: 2px solid #1f4788;
-    padding-bottom: 8px;
-  }
-  .linha-card p {
-    margin: 8px 0;
-    font-size: 13px;
-    color: #666;
-  }
-  .linha-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-top: 15px;
-  }
-  .info-item {
-    background: #f9f9f9;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 13px;
-  }
-  .info-label {
-    font-weight: 600;
-    color: #1f4788;
-    display: block;
-    margin-bottom: 4px;
-  }
-  .info-value {
-    color: #333;
-    font-size: 13px;
-  }
-  .footer {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px solid #ddd;
-    text-align: center;
-    font-size: 12px;
-    color: #999;
-    page-break-before: avoid;
-  }
-  .alert {
-    background: #e8f4f8;
-    color: #0c5460;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    border-left: 4px solid #0c5460;
-  }
-  @media print {
-    body { padding: 0; }
-    .header { margin-bottom: 20px; }
-    .linha-card { margin-bottom: 15px; }
-    @page { margin: 15mm; }
-  }
-</style>
-</head>
-<body>
-<div class="header">
-  <h1>🌾 Relatório de Crédito Rural - CRESOL</h1>
-  <p>Consulta de Linhas Disponíveis para Operações Rurais</p>
-  <div class="meta">
-    <div class="meta-item"><strong>Data:</strong> ${dataAtual}</div>
-    <div class="meta-item"><strong>Hora:</strong> ${new Date().toLocaleTimeString('pt-BR')}</div>
-  </div>
-</div>
-
-<div class="content">
-  <div class="alert">
-    <strong>ℹ️ Informações Importantes:</strong> Este relatório apresenta as linhas de crédito disponíveis conforme os critérios de busca.
-    Para contratar um crédito, entre em contato com a agência da CRESOL mais próxima com toda a documentação necessária.
-  </div>
-  ${conteudo}
-</div>
-
-<div class="footer">
-  <p><strong>Sistema de Crédito Rural - CRESOL</strong></p>
-  <p>Relatório gerado automaticamente. As informações contidas neste documento são baseadas no Plano Safra 2025/2026.</p>
-  <p>Para dúvidas, contate: agro@cresol.com.br | Telefone: (54) 3025-2000</p>
-</div>
-
-<script>
-  window.onload = function() {
-    // Dar um tempo para a página renderizar
-    setTimeout(function() {
-      window.print();
-    }, 500);
-  };
-</script>
-</body>
-</html>
-  `;
+  const htmlPDF = '<!DOCTYPE html>' +
+    '<html lang="pt-BR">' +
+    '<head>' +
+    '<meta charset="UTF-8">' +
+    '<title>Relatório de Crédito Rural</title>' +
+    '<style>' +
+    '* { margin: 0; padding: 0; box-sizing: border-box; }' +
+    'body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; }' +
+    '.header { background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; page-break-after: avoid; }' +
+    '.header h1 { font-size: 28px; margin-bottom: 10px; }' +
+    '.header p { font-size: 14px; opacity: 0.9; }' +
+    '.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; font-size: 13px; }' +
+    '.meta-item { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 4px; }' +
+    '.content { margin-top: 20px; }' +
+    '.linha-card { background: white; border: 1px solid #ddd; border-radius: 5px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }' +
+    '.linha-card h3 { color: #1f4788; margin-bottom: 10px; font-size: 18px; border-bottom: 2px solid #1f4788; padding-bottom: 8px; }' +
+    '.linha-card p { margin: 8px 0; font-size: 13px; color: #666; }' +
+    '.linha-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }' +
+    '.info-item { background: #f9f9f9; padding: 10px; border-radius: 4px; font-size: 13px; }' +
+    '.info-label { font-weight: 600; color: #1f4788; display: block; margin-bottom: 4px; }' +
+    '.info-value { color: #333; font-size: 13px; }' +
+    '.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; font-size: 12px; color: #999; page-break-before: avoid; }' +
+    '.alert { background: #e8f4f8; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0c5460; }' +
+    '@media print { body { padding: 0; } .header { margin-bottom: 20px; } .linha-card { margin-bottom: 15px; } @page { margin: 15mm; } }' +
+    '</style>' +
+    '</head>' +
+    '<body>' +
+    '<div class="header">' +
+    '<h1>🌾 Relatório de Crédito Rural - CRESOL</h1>' +
+    '<p>Consulta de Linhas Disponíveis para Operações Rurais</p>' +
+    '<div class="meta">' +
+    '<div class="meta-item"><strong>Data:</strong> ' + dataAtual + '</div>' +
+    '<div class="meta-item"><strong>Hora:</strong> ' + horaAtual + '</div>' +
+    '</div>' +
+    '</div>' +
+    '<div class="content">' +
+    '<div class="alert">' +
+    '<strong>ℹ️ Informações Importantes:</strong> Este relatório apresenta as linhas de crédito disponíveis conforme os critérios de busca. ' +
+    'Para contratar um crédito, entre em contato com a agência da CRESOL mais próxima com toda a documentação necessária.' +
+    '</div>' +
+    conteudo +
+    '</div>' +
+    '<div class="footer">' +
+    '<p><strong>Sistema de Crédito Rural - CRESOL</strong></p>' +
+    '<p>Relatório gerado automaticamente. As informações contidas neste documento são baseadas no Plano Safra 2025/2026.</p>' +
+    '<p>Para dúvidas, contate: agro@cresol.com.br | Telefone: (54) 3025-2000</p>' +
+    '</div>' +
+    '<script>' +
+    'window.onload = function() { setTimeout(function() { window.print(); }, 500); };' +
+    '</script>' +
+    '</body>' +
+    '</html>';
 
   const blob = new Blob([htmlPDF], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
