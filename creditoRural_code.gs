@@ -735,9 +735,9 @@ window.exportarPDF = function() {
     '<p>Relatório gerado automaticamente. As informações contidas neste documento são baseadas no Plano Safra 2025/2026.</p>' +
     '<p>Para dúvidas, contate: agro@cresol.com.br | Telefone: (54) 3025-2000</p>' +
     '</div>' +
-    '<script>' +
+    '<scr' + 'ipt>' +
     'window.onload = function() { setTimeout(function() { window.print(); }, 500); };' +
-    '</script>' +
+    '<\/scr' + 'ipt>' +
     '</body>' +
     '</html>';
 
