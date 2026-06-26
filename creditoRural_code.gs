@@ -958,7 +958,7 @@ window.mostrarResultados = function(linhas) {
         if (esgotado) {
           corpo += '<br><em style="font-size: 12px;">O valor já tomado atinge o teto desta linha para a cultura.</em>';
         }
-        html += '<div style="margin-top: 8px; background: ' + bg + '; border-left: 4px solid ' + borda + '; padding: 10px 12px; border-radius: 4px;">' +
+        html += '<div class="limite-disponivel" style="margin-top: 8px; background: ' + bg + '; border-left: 4px solid ' + borda + '; padding: 10px 12px; border-radius: 4px;">' +
           '<span style="font-weight: 600; color: ' + cor + '; font-size: 13px; display: block; margin-bottom: 4px;">' + titulo + '</span>' +
           '<div style="color: #333; font-size: 13px;">' + corpo + '</div>' +
           '</div>';
@@ -1098,6 +1098,9 @@ window.exportarPDF = function() {
     '.culturas-financiadas { margin-top: 8px; background: #fdf2e6 !important; border-left: 4px solid #f58220 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
     '.culturas-financiadas span { font-weight: 600; color: #b3590f; font-size: 13px; display: block; margin-bottom: 4px; }' +
     '.culturas-financiadas div { color: #333; font-size: 13px; }' +
+    '.limite-disponivel { margin-top: 8px; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
+    '.limite-disponivel span { font-size: 13px; display: block; margin-bottom: 4px; }' +
+    '.limite-disponivel div { color: #333; font-size: 13px; }' +
     '.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; font-size: 12px; color: #999; page-break-before: avoid; }' +
     '.alert { background: #e8f4f8; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0c5460; }' +
     '@media print { body { padding: 0; } .header { margin-bottom: 20px; } .linha-card { margin-bottom: 15px; } @page { margin: 15mm; } }' +
