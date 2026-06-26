@@ -438,20 +438,16 @@ button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(31, 71, 
 <label>📦 Produto/Finalidade</label>
 <input type="text" id="produto" placeholder="Trator, custeio de safra...">
 </div>
-<div class="grid-2">
-<div class="form-group">
-<label>👤 Enquadramento</label>
-<select id="enquadramento">
-<option value="">-- Selecione --</option>
-<option value="pronaf">PRONAF (Agricultura Familiar)</option>
-<option value="pronamp">PRONAMP (Médio Produtor)</option>
-<option value="empresarial">Agricultura Empresarial</option>
-</select>
-</div>
 <div class="form-group">
 <label>💰 Renda Bruta Anual (R$)</label>
-<input type="number" id="renda" placeholder="Ex: 150000" min="0">
+<input type="number" id="renda" placeholder="Ex: 150000" min="0" oninput="window.atualizarEnquadramento()">
 </div>
+<div class="form-group">
+<label>👤 Enquadramento Detectado</label>
+<input type="text" id="enquadramento" readonly style="background-color: #f0f0f0; cursor: not-allowed;" placeholder="Preenchido automaticamente pela renda">
+<small style="color: #666; display: block; margin-top: 5px;">
+Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricultura Empresarial
+</small>
 </div>
 <div class="form-group">
 <label>🎯 Tipo de Operação</label>
@@ -510,13 +506,36 @@ window.mudarAba = function(event, abaId) {
   }
 };
 
+window.atualizarEnquadramento = function() {
+  const renda = parseInt(document.getElementById('renda').value) || 0;
+  let enquadramento = '';
+  let enquadramentoDisplay = '';
+
+  if (renda === 0) {
+    enquadramento = '';
+    enquadramentoDisplay = '';
+  } else if (renda <= 500000) {
+    enquadramento = 'pronaf';
+    enquadramentoDisplay = '🌾 PRONAF (Agricultura Familiar)';
+  } else if (renda <= 3500000) {
+    enquadramento = 'pronamp';
+    enquadramentoDisplay = '🌱 PRONAMP (Médio Produtor)';
+  } else {
+    enquadramento = 'empresarial';
+    enquadramentoDisplay = '🏢 Agricultura Empresarial';
+  }
+
+  document.getElementById('enquadramento').value = enquadramentoDisplay;
+  document.getElementById('enquadramento').dataset.value = enquadramento;
+};
+
 window.buscar = function() {
   const produto = document.getElementById('produto').value;
-  const enquadramento = document.getElementById('enquadramento').value;
   const renda = parseInt(document.getElementById('renda').value) || 0;
+  const enquadramento = document.getElementById('enquadramento').dataset.value || '';
   const finalidade = document.getElementById('finalidade').value;
 
-  if (!enquadramento || !renda || !finalidade) {
+  if (!renda || !enquadramento || !finalidade) {
     alert('Por favor, preencha todos os campos obrigatórios');
     return;
   }
