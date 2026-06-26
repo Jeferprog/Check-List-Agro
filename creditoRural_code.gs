@@ -451,15 +451,22 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 </div>
 <div class="form-group">
 <label>🎯 Tipo de Operação</label>
-<select id="finalidade">
+<select id="finalidade" onchange="window.atualizarProdutosDisponiveis()">
 <option value="">-- Selecione --</option>
 <option value="custeio">Custeio (Despesas do ciclo)</option>
 <option value="investimento">Investimento (Máquinas/Equipamentos)</option>
 <option value="mecanizacao">Mecanização</option>
 <option value="irrigacao">Irrigação</option>
-<option value="agroecologia">Agroecologia</option>
+<option value="agroecologia">Agroecologia/Sustentabilidade</option>
 <option value="infraestrutura">Infraestrutura</option>
+<option value="armazenagem">Armazenagem</option>
+<option value="sustentabilidade">Sustentabilidade/Carbono</option>
+<option value="cafe">Específico para Café</option>
 </select>
+</div>
+<div id="produtosDisponiveis" style="display: none; background: #e8f4f8; padding: 12px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #0c5460; font-size: 13px;">
+<strong style="color: #0c5460;">💡 Produtos financiáveis:</strong>
+<span id="listaProdutos" style="display: block; margin-top: 5px; color: #333;"></span>
 </div>
 <button id="btnBuscar" onclick="window.buscar()">🔍 Buscar Linhas Disponíveis</button>
 <div class="loading" id="loading">
@@ -506,6 +513,18 @@ window.mudarAba = function(event, abaId) {
   }
 };
 
+window.produtosPorTipo = {
+  'custeio': ['Sementes', 'Fertilizantes', 'Defensivos', 'Combustível', 'Mão de obra', 'Aluguel de máquinas'],
+  'investimento': ['Máquinas', 'Equipamentos', 'Implementos', 'Infraestrutura', 'Benfeitorias', 'Animais produtivos'],
+  'mecanizacao': ['Tratores', 'Colheitadeiras', 'Plantadeiras', 'Pulverizadores', 'Implementos agrícolas'],
+  'irrigacao': ['Sistemas de irrigação', 'Pivôs centrais', 'Gotejamento', 'Aspersão', 'Tubulação', 'Motores'],
+  'agroecologia': ['Transição sustentável', 'Certificação orgânica', 'Sistemas agroecológicos', 'Insumos naturais'],
+  'infraestrutura': ['Construções rurais', 'Galpões', 'Silos', 'Benfeitorias', 'Eletrificação rural'],
+  'armazenagem': ['Silos', 'Armazéns', 'Sacos', 'Sistemas de armazenagem', 'Climatização'],
+  'sustentabilidade': ['Plantio direto', 'Rotação de culturas', 'Reflorestamento', 'Recuperação ambiental', 'Energia renovável'],
+  'cafe': ['Plantio de café', 'Renovação de cafezal', 'Máquinas de café', 'Sistemas de irrigação para café', 'Beneficiamento']
+};
+
 window.atualizarEnquadramento = function() {
   const renda = parseInt(document.getElementById('renda').value) || 0;
   let enquadramento = '';
@@ -527,6 +546,21 @@ window.atualizarEnquadramento = function() {
 
   document.getElementById('enquadramento').value = enquadramentoDisplay;
   document.getElementById('enquadramento').dataset.value = enquadramento;
+};
+
+window.atualizarProdutosDisponiveis = function() {
+  const tipoOperacao = document.getElementById('finalidade').value;
+  const produtosDiv = document.getElementById('produtosDisponiveis');
+  const listaProdutos = document.getElementById('listaProdutos');
+
+  if (!tipoOperacao || !window.produtosPorTipo[tipoOperacao]) {
+    produtosDiv.style.display = 'none';
+    return;
+  }
+
+  const produtos = window.produtosPorTipo[tipoOperacao];
+  listaProdutos.textContent = produtos.join(' • ');
+  produtosDiv.style.display = 'block';
 };
 
 window.buscar = function() {
