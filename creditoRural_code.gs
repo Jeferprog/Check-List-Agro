@@ -590,7 +590,16 @@ window.carregarLinhasAdministrativo = function() {
 };
 
 window.editarLinha = function(idLinha) {
-  alert('Edição será implementada na próxima versão. ID: ' + idLinha);
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #fff3cd; color: #856404; padding: 15px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px;';
+  msg.innerHTML = '<strong>ℹ️ Edição</strong><br>Função de edição será implementada na próxima versão.<br><strong>ID:</strong> ' + idLinha;
+  document.body.appendChild(msg);
+
+  setTimeout(function() {
+    msg.style.opacity = '0';
+    msg.style.transition = 'opacity 0.3s';
+    setTimeout(function() { msg.remove(); }, 300);
+  }, 3000);
 };
 
 window.carregarDadosLinha = function() {
