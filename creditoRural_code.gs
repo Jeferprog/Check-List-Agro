@@ -164,6 +164,9 @@ function buscarLinhas(parametros) {
 
           if (!validarFinalidade(parametros.finalidade, linha[finalidadesIdx])) return false;
 
+          // Filtro opcional por palavra-chave (Produto/Finalidade digitado)
+          if (!validarProduto(parametros.produto, linha, headers)) return false;
+
           return true;
         } catch (e) {
           return false;
@@ -222,6 +225,38 @@ function validarRenda(renda, enquadramentoTexto) {
     const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
 
     return renda >= min && renda <= max;
+  } catch (e) {
+    return true;
+  }
+}
+
+function validarProduto(produtoBuscado, linha, headers) {
+  /**
+   * Filtro opcional por palavra-chave. Se o colaborador digitou um
+   * produto/finalidade (ex: "trator", "café", "silo"), a linha só passa se
+   * o termo aparecer em algum campo relevante. Se vazio, não filtra nada.
+   */
+  try {
+    if (!produtoBuscado || typeof produtoBuscado !== "string") return true;
+    const termo = produtoBuscado.trim().toLowerCase();
+    if (termo === "") return true;
+
+    const camposRelevantes = [
+      "Nome Linha", "Finalidade Principal", "Finalidades (tags)", "Observações"
+    ];
+    const textoBusca = camposRelevantes
+      .map(c => {
+        const idx = headers.indexOf(c);
+        return idx === -1 ? "" : String(linha[idx] || "");
+      })
+      .join(" ")
+      .toLowerCase();
+
+    // Quebra a busca em palavras: basta uma palavra casar para aceitar
+    const palavras = termo.split(/\s+/).filter(p => p.length >= 3);
+    if (palavras.length === 0) return true;
+
+    return palavras.some(p => textoBusca.includes(p));
   } catch (e) {
     return true;
   }
@@ -514,8 +549,11 @@ button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(31, 71, 
 <strong>ℹ️ Como usar:</strong> Preencha os campos com dados do associado para encontrar linhas disponíveis.
 </div>
 <div class="form-group">
-<label>📦 Produto/Finalidade</label>
-<input type="text" id="produto" placeholder="Trator, custeio de safra...">
+<label>📦 Produto/Finalidade <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional - refina a busca)</span></label>
+<input type="text" id="produto" placeholder="Ex: trator, café, silo, irrigação...">
+<small style="color: #666; display: block; margin-top: 5px;">
+Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deixe em branco para ver todas as linhas do tipo selecionado.
+</small>
 </div>
 <div class="form-group">
 <label>💰 Renda Bruta Anual (R$)</label>
@@ -710,8 +748,17 @@ window.abrirSimulador = function(nomeLinha, taxaMin, prazo, carencia) {
     '<input type="number" id="sim_valor" placeholder="100000" step="1000" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
     '</div>' +
     '<div style="margin-bottom: 15px;">' +
-    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Prazo (meses)</label>' +
+    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Prazo Total (meses)</label>' +
     '<input type="number" id="sim_prazo" value="' + prazo + '" min="1" max="' + prazo + '" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+    '</div>' +
+    '<div style="margin-bottom: 15px;">' +
+    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Periodicidade das Parcelas</label>' +
+    '<select id="sim_periodicidade" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+    '<option value="12" selected>Anual (típico no crédito rural)</option>' +
+    '<option value="6">Semestral</option>' +
+    '<option value="3">Trimestral</option>' +
+    '<option value="1">Mensal</option>' +
+    '</select>' +
     '</div>' +
     '<div style="margin-bottom: 15px;">' +
     '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Anual (%)</label>' +
@@ -730,26 +777,44 @@ window.calcularParcelas = function() {
   const valor = parseFloat(document.getElementById('sim_valor').value);
   const prazo = parseInt(document.getElementById('sim_prazo').value);
   const taxa = parseFloat(document.getElementById('sim_taxa').value);
+  const periodicidade = parseInt(document.getElementById('sim_periodicidade').value) || 12;
 
   if (!valor || valor <= 0) {
-    alert('Digite um valor válido');
+    alert('Digite um valor de crédito válido');
+    return;
+  }
+  if (!prazo || prazo <= 0) {
+    alert('Digite um prazo válido');
     return;
   }
 
-  const taxaMensal = taxa / 100 / 12;
-  const numerador = valor * taxaMensal * Math.pow(1 + taxaMensal, prazo);
-  const denominador = Math.pow(1 + taxaMensal, prazo) - 1;
-  const parcela = numerador / denominador;
-  const totalPago = parcela * prazo;
+  // Quantidade de parcelas = prazo total dividido pela periodicidade
+  const numParcelas = Math.max(1, Math.floor(prazo / periodicidade));
+
+  // Taxa nominal do período (ex: anual = taxa/100; mensal = taxa/100/12)
+  const taxaPeriodo = (taxa / 100) * (periodicidade / 12);
+
+  let parcela;
+  if (taxaPeriodo === 0) {
+    parcela = valor / numParcelas;
+  } else {
+    const fator = Math.pow(1 + taxaPeriodo, numParcelas);
+    parcela = (valor * taxaPeriodo * fator) / (fator - 1);
+  }
+
+  const totalPago = parcela * numParcelas;
   const totalJuros = totalPago - valor;
+
+  const rotuloPeriodo = { 1: 'mensais', 3: 'trimestrais', 6: 'semestrais', 12: 'anuais' }[periodicidade] || '';
 
   let html = '<div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-top: 15px;">' +
     '<h4 style="color: #1f4788; margin-bottom: 10px;">Resultado:</h4>' +
     '<p><strong>Valor do Crédito:</strong> R$ ' + window.formatarMoeda(valor) + '</p>' +
-    '<p><strong>Valor da Parcela:</strong> R$ ' + window.formatarMoeda(parcela) + '</p>' +
+    '<p><strong>Quantidade de Parcelas:</strong> ' + numParcelas + ' parcela(s) ' + rotuloPeriodo + '</p>' +
+    '<p><strong>Valor de Cada Parcela:</strong> R$ ' + window.formatarMoeda(parcela) + '</p>' +
     '<p><strong>Total de Juros:</strong> R$ ' + window.formatarMoeda(totalJuros) + '</p>' +
     '<p><strong>Valor Total a Pagar:</strong> R$ ' + window.formatarMoeda(totalPago) + '</p>' +
-    '<p style="color: #666; font-size: 12px; margin-top: 10px;"><em>*Cálculo sem considerar carência, seguros ou outras taxas.</em></p>' +
+    '<p style="color: #666; font-size: 12px; margin-top: 10px;"><em>*Simulação aproximada (Tabela Price), sem considerar carência, seguros ou outras taxas.</em></p>' +
     '</div>';
 
   document.getElementById('resultadoSimulador').innerHTML = html;
