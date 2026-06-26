@@ -589,6 +589,10 @@ window.carregarLinhasAdministrativo = function() {
     .listarTodasAsLinhas();
 };
 
+window.editarLinha = function(idLinha) {
+  alert('Edição será implementada na próxima versão. ID: ' + idLinha);
+};
+
 window.carregarDadosLinha = function() {
   const selectElement = document.getElementById('linhaParaEditar');
   const idLinha = selectElement.value;
@@ -605,7 +609,7 @@ window.carregarDadosLinha = function() {
     '<h3 style="margin-bottom: 20px; color: #1f4788;">' + nomeLinha + '</h3>' +
     '<p><strong>ID:</strong> ' + idLinha + '</p>' +
     '<p style="color: #666; font-style: italic;">Clique em editar para modificar os dados...</p>' +
-    '<button onclick="alert(\'Edição será implementada na próxima versão. ID: ' + idLinha + '\')" style="margin-top: 20px; background: #28a745;">✏️ Editar</button>' +
+    '<button onclick="window.editarLinha(' + "'" + idLinha + "'" + ')" style="margin-top: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">✏️ Editar</button>' +
     '</div>';
 
   document.getElementById('edicaoConteudo').innerHTML = html;
