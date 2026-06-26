@@ -27,7 +27,7 @@ function inicializarSheetLinhas() {
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
     "Status (Ativa/Inativa)", "Data Atualização", "Observações",
-    "Itens Financiáveis"
+    "Itens Financiáveis", "Culturas Financiadas"
   ];
 
   SHEET_LINHAS.appendRow(headers);
@@ -39,12 +39,14 @@ function inicializarSheetLinhas() {
     ["L001", "PRONAF B (Microcrédito)", "Banco do Brasil/Caixa", "Microcrédito para pequenos produtores",
       "custeio,investimento", "Sem limite/R$ 500 mil", "0.5", "2.5", "24", "0", "1000", "25000",
       "DAP ativa, agricultor familiar", "DAP, RG, CPF, comprovante renda", "Ativa", new Date(), "Modalidade mais acessível",
-      "Ferramentas e pequenos equipamentos; pequenos animais; insumos; pequenas agroindústrias; artesanato e atividades de geração de renda"],
+      "Ferramentas e pequenos equipamentos; pequenos animais; insumos; pequenas agroindústrias; artesanato e atividades de geração de renda",
+      "Culturas de subsistência e geração de renda: mandioca, feijão, milho, hortaliças, frutas e pequenas criações"],
 
     ["L002", "PRONAF Custeio", "Banco do Brasil/Caixa/BB", "Despesas do ciclo produtivo",
       "custeio", "Sem limite/R$ 500 mil", "2", "6", "12", "0", "5000", "500000",
       "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Safra até 12 meses",
-      "Sementes e mudas; fertilizantes e corretivos; defensivos; combustível; mão de obra; ração e insumos pecuários (vacinas, sais minerais); tratos culturais e colheita; antecipação de insumos"],
+      "Sementes e mudas; fertilizantes e corretivos; defensivos; combustível; mão de obra; ração e insumos pecuários (vacinas, sais minerais); tratos culturais e colheita; antecipação de insumos",
+      "Soja, milho, café, trigo, feijão, arroz, mandioca, cebola, uva, hortaliças e fruticultura (conforme ZARC do município)"],
 
     ["L003", "PRONAF Investimento", "Banco do Brasil/Caixa/BB", "Máquinas, equipamentos, infraestrutura",
       "investimento,equipamento", "Sem limite/R$ 500 mil", "5", "5", "120", "36", "10000", "500000",
@@ -64,17 +66,20 @@ function inicializarSheetLinhas() {
     ["L006", "PRONAF Mulher", "Banco do Brasil/Caixa", "Mulheres produtoras rurais",
       "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "400000",
       "DAP ativa, mulher, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Exclusivo para mulheres",
-      "Custeio e investimento da atividade (insumos, máquinas, animais, infraestrutura) em projetos liderados por mulheres agricultoras"],
+      "Custeio e investimento da atividade (insumos, máquinas, animais, infraestrutura) em projetos liderados por mulheres agricultoras",
+      "Mesmas culturas do Pronaf Custeio: grãos, café, hortaliças e fruticultura (conforme ZARC e o projeto)"],
 
     ["L007", "PRONAF Jovem", "Banco do Brasil/Caixa", "Beneficiários 16-29 anos",
       "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "200000",
       "DAP ativa, jovem 16-29 anos", "DAP, RG, CPF, comprovante idade", "Ativa", new Date(), "Limite menor para jovens",
-      "Estruturação da atividade produtiva por jovens: máquinas, animais, infraestrutura e custeio inicial"],
+      "Estruturação da atividade produtiva por jovens: máquinas, animais, infraestrutura e custeio inicial",
+      "Mesmas culturas do Pronaf Custeio: grãos, café, hortaliças e fruticultura (conforme ZARC e o projeto)"],
 
     ["L008", "PRONAMP Custeio", "Banco do Brasil/Caixa/BNDES", "Despesas do ciclo produtivo - Médios produtores",
       "custeio", "R$ 500 mil/R$ 3.5 mi", "10", "10", "12", "0", "100000", "2000000",
       "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, comprovante renda", "Ativa", new Date(), "Para produtores médios",
-      "Sementes, fertilizantes, defensivos, corretivos; combustível; mão de obra; insumos pecuários e demais despesas do ciclo produtivo"],
+      "Sementes, fertilizantes, defensivos, corretivos; combustível; mão de obra; insumos pecuários e demais despesas do ciclo produtivo",
+      "Soja, milho, trigo, café, feijão, arroz, algodão e demais lavouras comerciais (conforme ZARC)"],
 
     ["L009", "PRONAMP Investimento", "Banco do Brasil/Caixa/BNDES", "Máquinas, equipamentos - Médios produtores",
       "investimento,equipamento", "R$ 500 mil/R$ 3.5 mi", "9", "10", "120", "24", "200000", "3500000",
@@ -114,18 +119,20 @@ function inicializarSheetLinhas() {
     ["L016", "Funcafé", "BNDES", "Específica para cafeicultores",
       "investimento,custeio,cafe", "Conforme análise", "8.5", "8.5", "120", "36", "100000", "3000000",
       "Propriedade com café, projeto técnico", "Documentos propriedade, projeto técnico, comprovante atividade", "Ativa", new Date(), "Exclusiva para cafeicultura",
-      "Custeio do cafezal e colheita; estocagem e aquisição de café; recuperação de cafezais (arranquio, decote, recepa); máquinas e beneficiamento"],
+      "Custeio do cafezal e colheita; estocagem e aquisição de café; recuperação de cafezais (arranquio, decote, recepa); máquinas e beneficiamento",
+      "Café (arábica e conilon/robusta)"],
 
     ["L017", "Agricultura Empresarial", "Bancos Credenciados", "Custeio geral (Grande produtor)",
       "custeio", "Acima de R$ 3.5 mi", "14", "14", "12", "0", "500000", "999999999",
       "Renda acima R$ 3.5 milhões", "Documentos completos, últimos 3 balanços", "Ativa", new Date(), "Maior risco = maior taxa",
-      "Custeio e investimento de grande porte: insumos, máquinas, infraestrutura e modernização, conforme análise da instituição"]
+      "Custeio e investimento de grande porte: insumos, máquinas, infraestrutura e modernização, conforme análise da instituição",
+      "Grandes lavouras: soja, milho, algodão, cana-de-açúcar, café, trigo e arroz (conforme análise e ZARC)"]
   ];
 
   linhas.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
-  SHEET_LINHAS.setColumnWidths(1, 18, 80);
+  SHEET_LINHAS.setColumnWidths(1, 19, 80);
   SHEET_LINHAS.getRange("O:O").setHorizontalAlignment("center");
 }
 
@@ -206,7 +213,8 @@ function buscarLinhas(parametros) {
             requisitos: linha[headers.indexOf("Requisitos")] || "",
             documentos: linha[headers.indexOf("Documentos Necessários")] || "",
             observacoes: linha[headers.indexOf("Observações")] || "",
-            itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || ""
+            itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || "",
+            culturas: linha[headers.indexOf("Culturas Financiadas")] || ""
           };
         } catch (e) {
           return null;
@@ -448,7 +456,8 @@ function listarTodasAsLinhas() {
         documentos: sanitizarValor(linha[headers.indexOf("Documentos Necessários")]),
         status: sanitizarValor(linha[headers.indexOf("Status (Ativa/Inativa)")]) || "Ativa",
         observacoes: sanitizarValor(linha[headers.indexOf("Observações")]),
-        itensFinanciaveis: sanitizarValor(linha[headers.indexOf("Itens Financiáveis")])
+        itensFinanciaveis: sanitizarValor(linha[headers.indexOf("Itens Financiáveis")]),
+        culturas: sanitizarValor(linha[headers.indexOf("Culturas Financiadas")])
       });
     }
 
@@ -496,7 +505,8 @@ function adicionarLinha(dados) {
       "Status (Ativa/Inativa)": dados.status || "Ativa",
       "Data Atualização": new Date(),
       "Observações": dados.observacoes || "",
-      "Itens Financiáveis": dados.itensFinanciaveis || ""
+      "Itens Financiáveis": dados.itensFinanciaveis || "",
+      "Culturas Financiadas": dados.culturas || ""
     };
 
     const novaLinha = headers.map(h => (mapa[h] !== undefined ? mapa[h] : ""));
@@ -781,6 +791,12 @@ window.mostrarResultados = function(linhas) {
           '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.itensFinanciaveis + '</div>' +
           '</div>';
       }
+      if (linha.culturas) {
+        html += '<div class="culturas-financiadas" style="margin-top: 8px; background: #fdf2e6; border-left: 4px solid #f58220; padding: 10px 12px; border-radius: 4px;">' +
+          '<span style="font-weight: 600; color: #b3590f; font-size: 13px;">🌱 Culturas financiadas:</span>' +
+          '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.culturas + '</div>' +
+          '</div>';
+      }
       html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
       html += '<button onclick="window.abrirSimulador(' + "'" + linha.nome + "'" + ', ' + linha.taxaMin + ', ' + linha.prazo + ', ' + linha.carencia + ')" style="background: #005c46; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💰 Simular Parcelas</button>';
       html += '<button onclick="window.exportarPDF()" style="background: #f58220; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📄 Exportar PDF</button>';
@@ -913,6 +929,9 @@ window.exportarPDF = function() {
     '.itens-financiaveis { margin-top: 12px; background: #eef6ee !important; border-left: 4px solid #28a745 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
     '.itens-financiaveis span { font-weight: 600; color: #1f6b1f; font-size: 13px; display: block; margin-bottom: 4px; }' +
     '.itens-financiaveis div { color: #333; font-size: 13px; }' +
+    '.culturas-financiadas { margin-top: 8px; background: #fdf2e6 !important; border-left: 4px solid #f58220 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
+    '.culturas-financiadas span { font-weight: 600; color: #b3590f; font-size: 13px; display: block; margin-bottom: 4px; }' +
+    '.culturas-financiadas div { color: #333; font-size: 13px; }' +
     '.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; font-size: 12px; color: #999; page-break-before: avoid; }' +
     '.alert { background: #e8f4f8; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0c5460; }' +
     '@media print { body { padding: 0; } .header { margin-bottom: 20px; } .linha-card { margin-bottom: 15px; } @page { margin: 15mm; } }' +
@@ -1056,7 +1075,7 @@ window.abrirFormularioNovaLinha = function() {
     id: '', nome: '', orgao: '', finalidadePrincipal: '', finalidades: '',
     enquadramento: 'Conforme análise', taxaMin: '', taxaMax: '', prazo: '',
     carencia: '', limiteMin: '', limiteMax: '', requisitos: '', documentos: '',
-    status: 'Ativa', observacoes: '', itensFinanciaveis: ''
+    status: 'Ativa', observacoes: '', itensFinanciaveis: '', culturas: ''
   };
   window.renderizarFormularioLinha(vazia, true);
 };
@@ -1108,6 +1127,7 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
   html += '</div>';
 
   html += area('edit_itens_financiaveis', 'Itens Financiáveis (o que pode ser financiado)', linha.itensFinanciaveis);
+  html += area('edit_culturas', 'Culturas Financiadas (apenas custeio)', linha.culturas);
   html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
   html += area('edit_requisitos', 'Requisitos', linha.requisitos);
   html += area('edit_observacoes', 'Observações', linha.observacoes);
@@ -1143,6 +1163,7 @@ window.coletarDadosFormulario = function() {
     requisitos: document.getElementById('edit_requisitos').value,
     observacoes: document.getElementById('edit_observacoes').value,
     itensFinanciaveis: document.getElementById('edit_itens_financiaveis').value,
+    culturas: document.getElementById('edit_culturas').value,
     status: document.getElementById('edit_status').value
   };
 };
@@ -1169,6 +1190,7 @@ window.salvarEdicaoLinha = function(idLinha) {
     'Requisitos': f.requisitos,
     'Observações': f.observacoes,
     'Itens Financiáveis': f.itensFinanciaveis,
+    'Culturas Financiadas': f.culturas,
     'Status (Ativa/Inativa)': f.status
   };
 
