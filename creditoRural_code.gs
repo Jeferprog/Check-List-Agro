@@ -746,7 +746,7 @@ window.mostrarResultados = function(linhas) {
       html += '<div class="info-item"><span class="info-label">Documentos:</span><span class="info-value">' + linha.documentos + '</span></div>';
       html += '</div>';
       if (linha.itensFinanciaveis) {
-        html += '<div style="margin-top: 12px; background: #eef6ee; border-left: 4px solid #28a745; padding: 10px 12px; border-radius: 4px;">' +
+        html += '<div class="itens-financiaveis" style="margin-top: 12px; background: #eef6ee; border-left: 4px solid #28a745; padding: 10px 12px; border-radius: 4px;">' +
           '<span style="font-weight: 600; color: #1f6b1f; font-size: 13px;">✅ O que pode ser financiado:</span>' +
           '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.itensFinanciaveis + '</div>' +
           '</div>';
@@ -879,6 +879,9 @@ window.exportarPDF = function() {
     '.info-item { background: #f9f9f9; padding: 10px; border-radius: 4px; font-size: 13px; }' +
     '.info-label { font-weight: 600; color: #1f4788; display: block; margin-bottom: 4px; }' +
     '.info-value { color: #333; font-size: 13px; }' +
+    '.itens-financiaveis { margin-top: 12px; background: #eef6ee !important; border-left: 4px solid #28a745 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
+    '.itens-financiaveis span { font-weight: 600; color: #1f6b1f; font-size: 13px; display: block; margin-bottom: 4px; }' +
+    '.itens-financiaveis div { color: #333; font-size: 13px; }' +
     '.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; font-size: 12px; color: #999; page-break-before: avoid; }' +
     '.alert { background: #e8f4f8; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0c5460; }' +
     '@media print { body { padding: 0; } .header { margin-bottom: 20px; } .linha-card { margin-bottom: 15px; } @page { margin: 15mm; } }' +
