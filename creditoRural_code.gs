@@ -26,7 +26,8 @@ function inicializarSheetLinhas() {
     "Finalidades (tags)", "Enquadramento (Renda Min/Max)", "Taxa Mín (%)",
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
-    "Status (Ativa/Inativa)", "Data Atualização", "Observações"
+    "Status (Ativa/Inativa)", "Data Atualização", "Observações",
+    "Itens Financiáveis"
   ];
 
   SHEET_LINHAS.appendRow(headers);
@@ -37,77 +38,94 @@ function inicializarSheetLinhas() {
   const linhas = [
     ["L001", "PRONAF B (Microcrédito)", "Banco do Brasil/Caixa", "Microcrédito para pequenos produtores",
       "custeio,investimento", "Sem limite/R$ 500 mil", "0.5", "2.5", "24", "0", "1000", "25000",
-      "DAP ativa, agricultor familiar", "DAP, RG, CPF, comprovante renda", "Ativa", new Date(), "Modalidade mais acessível"],
+      "DAP ativa, agricultor familiar", "DAP, RG, CPF, comprovante renda", "Ativa", new Date(), "Modalidade mais acessível",
+      "Ferramentas e pequenos equipamentos; pequenos animais; insumos; pequenas agroindústrias; artesanato e atividades de geração de renda"],
 
     ["L002", "PRONAF Custeio", "Banco do Brasil/Caixa/BB", "Despesas do ciclo produtivo",
       "custeio", "Sem limite/R$ 500 mil", "2", "6", "12", "0", "5000", "500000",
-      "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Safra até 12 meses"],
+      "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Safra até 12 meses",
+      "Sementes e mudas; fertilizantes e corretivos; defensivos; combustível; mão de obra; ração e insumos pecuários (vacinas, sais minerais); tratos culturais e colheita; antecipação de insumos"],
 
     ["L003", "PRONAF Investimento", "Banco do Brasil/Caixa/BB", "Máquinas, equipamentos, infraestrutura",
       "investimento,equipamento", "Sem limite/R$ 500 mil", "5", "5", "120", "36", "10000", "500000",
-      "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico, 3 últimos balanços", "Ativa", new Date(), "Carência de 3 anos"],
+      "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico, 3 últimos balanços", "Ativa", new Date(), "Carência de 3 anos",
+      "Tratores, máquinas e implementos; benfeitorias e infraestrutura de produção; animais de produção; conectividade no campo (antenas, roteadores); prevenção e combate a incêndios"],
 
     ["L004", "PRONAF Agroecologia", "Banco do Brasil/Caixa", "Transição para sistemas sustentáveis",
       "investimento,agroecologia", "Sem limite/R$ 500 mil", "0.5", "0.5", "120", "36", "5000", "300000",
-      "DAP ativa, agricultor familiar, projeto agroecológico", "DAP, RG, CPF, projeto agroecológico", "Ativa", new Date(), "Menor taxa - foco sustentabilidade"],
+      "DAP ativa, agricultor familiar, projeto agroecológico", "DAP, RG, CPF, projeto agroecológico", "Ativa", new Date(), "Menor taxa - foco sustentabilidade",
+      "Implantação de sistemas agroecológicos/orgânicos; insumos biológicos; adubação verde; certificação orgânica; recuperação de solo; biofábricas"],
 
     ["L005", "PRONAF Irrigação", "Banco do Brasil/Caixa", "Sistemas de irrigação eficiente",
       "investimento,irrigacao", "Sem limite/R$ 500 mil", "4", "4", "120", "36", "15000", "400000",
-      "DAP ativa, agricultor familiar, projeto irrigação", "DAP, projeto técnico irrigação, orçamentos", "Ativa", new Date(), "Para modernizar irrigação"],
+      "DAP ativa, agricultor familiar, projeto irrigação", "DAP, projeto técnico irrigação, orçamentos", "Ativa", new Date(), "Para modernizar irrigação",
+      "Sistemas de irrigação (gotejamento, aspersão, pivô); motobombas; tubulações; reservatórios; automação hídrica"],
 
     ["L006", "PRONAF Mulher", "Banco do Brasil/Caixa", "Mulheres produtoras rurais",
       "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "400000",
-      "DAP ativa, mulher, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Exclusivo para mulheres"],
+      "DAP ativa, mulher, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Exclusivo para mulheres",
+      "Custeio e investimento da atividade (insumos, máquinas, animais, infraestrutura) em projetos liderados por mulheres agricultoras"],
 
     ["L007", "PRONAF Jovem", "Banco do Brasil/Caixa", "Beneficiários 16-29 anos",
       "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "200000",
-      "DAP ativa, jovem 16-29 anos", "DAP, RG, CPF, comprovante idade", "Ativa", new Date(), "Limite menor para jovens"],
+      "DAP ativa, jovem 16-29 anos", "DAP, RG, CPF, comprovante idade", "Ativa", new Date(), "Limite menor para jovens",
+      "Estruturação da atividade produtiva por jovens: máquinas, animais, infraestrutura e custeio inicial"],
 
     ["L008", "PRONAMP Custeio", "Banco do Brasil/Caixa/BNDES", "Despesas do ciclo produtivo - Médios produtores",
       "custeio", "R$ 500 mil/R$ 3.5 mi", "10", "10", "12", "0", "100000", "2000000",
-      "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, comprovante renda", "Ativa", new Date(), "Para produtores médios"],
+      "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, comprovante renda", "Ativa", new Date(), "Para produtores médios",
+      "Sementes, fertilizantes, defensivos, corretivos; combustível; mão de obra; insumos pecuários e demais despesas do ciclo produtivo"],
 
     ["L009", "PRONAMP Investimento", "Banco do Brasil/Caixa/BNDES", "Máquinas, equipamentos - Médios produtores",
       "investimento,equipamento", "R$ 500 mil/R$ 3.5 mi", "9", "10", "120", "24", "200000", "3500000",
-      "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, projeto técnico", "Ativa", new Date(), "Limite maior que PRONAF"],
+      "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, projeto técnico", "Ativa", new Date(), "Limite maior que PRONAF",
+      "Tratores, máquinas e equipamentos; benfeitorias; infraestrutura; modernização e ampliação da propriedade"],
 
     ["L010", "Moderfrota", "BNDES/Bancos Credenciados", "Aquisição de máquinas e implementos",
       "investimento,equipamento,mecanizacao", "Conforme análise", "9", "13.5", "96", "12", "50000", "5000000",
-      "Médio/grande produtor, documentação completa", "RG, CPF, últimos 3 balanços, orçamentos", "Ativa", new Date(), "Específico para máquinas agrícolas"],
+      "Médio/grande produtor, documentação completa", "RG, CPF, últimos 3 balanços, orçamentos", "Ativa", new Date(), "Específico para máquinas agrícolas",
+      "Tratores; colheitadeiras; plataformas de corte; pulverizadores; plantadeiras e semeadoras; equipamentos para beneficiamento de café (novos e usados)"],
 
     ["L011", "Moderagro", "BNDES/Banco do Brasil/Caixa", "Modernização e produtividade",
       "investimento,modernizacao", "Conforme análise", "8", "10", "144", "36", "100000", "2200000",
-      "Propriedade registrada, projeto técnico", "Documentos de propriedade, projeto técnico, orçamentos", "Ativa", new Date(), "Foco modernização geral"],
+      "Propriedade registrada, projeto técnico", "Documentos de propriedade, projeto técnico, orçamentos", "Ativa", new Date(), "Foco modernização geral",
+      "Suprimento de água, alimentação animal e tratamento de dejetos; frigoríficos e beneficiamento; equipamentos e embarcações de pesca/aquicultura; matrizes e reprodutores"],
 
     ["L012", "Programa ABC", "BNDES/Banco do Brasil", "Projetos de baixa emissão de carbono",
       "investimento,sustentabilidade,carbono", "Conforme análise", "8", "10", "120", "36", "50000", "2200000",
-      "Propriedade registrada, projeto baixo carbono", "Projeto técnico ABC, documentos propriedade", "Ativa", new Date(), "Pivot, plantio direto, reflorestamento"],
+      "Propriedade registrada, projeto baixo carbono", "Projeto técnico ABC, documentos propriedade", "Ativa", new Date(), "Pivot, plantio direto, reflorestamento",
+      "Recuperação de pastagens degradadas; plantio direto; integração lavoura-pecuária-floresta (ILPF); florestas comerciais; tratamento de dejetos"],
 
     ["L013", "PCA (Armazéns)", "BNDES", "Construção e ampliação de silos/armazéns",
       "investimento,infraestrutura,armazenagem", "Conforme análise", "8.5", "10", "120", "24", "100000", "200000000",
-      "Capacidade até 12.000 ton ou cooperativa", "Documentos propriedade, projeto técnico, orçamentos", "Ativa", new Date(), "Para infraestrutura de armazenagem"],
+      "Capacidade até 12.000 ton ou cooperativa", "Documentos propriedade, projeto técnico, orçamentos", "Ativa", new Date(), "Para infraestrutura de armazenagem",
+      "Construção, ampliação e modernização de armazéns e silos; equipamentos de secagem, climatização e movimentação de grãos"],
 
     ["L014", "Proirriga", "BNDES", "Sistemas de irrigação eficiente (geral)",
       "investimento,irrigacao", "Conforme análise", "10.5", "10.5", "120", "24", "20000", "500000",
-      "Projeto irrigação, seguro obrigatório", "Projeto técnico, orçamentos, proponente habilitado", "Ativa", new Date(), "Obrigatório contratar seguro"],
+      "Projeto irrigação, seguro obrigatório", "Projeto técnico, orçamentos, proponente habilitado", "Ativa", new Date(), "Obrigatório contratar seguro",
+      "Sistemas de irrigação e cultivo protegido (estufas); equipamentos; automação e eficiência hídrica/energética"],
 
     ["L015", "RenovAgro", "BNDES", "Recuperação e projetos ambientais",
       "investimento,ambiental,sustentabilidade", "Conforme análise", "9", "9", "120", "24", "50000", "1500000",
-      "Propriedade registrada, projeto ambiental", "Documentos propriedade, projeto técnico ambiental", "Ativa", new Date(), "Inclui prevenção de incêndios"],
+      "Propriedade registrada, projeto ambiental", "Documentos propriedade, projeto técnico ambiental", "Ativa", new Date(), "Inclui prevenção de incêndios",
+      "Recuperação de áreas degradadas; ILPF; energia renovável; tratamento de resíduos; recomposição ambiental; prevenção e combate a incêndios"],
 
     ["L016", "Funcafé", "BNDES", "Específica para cafeicultores",
       "investimento,custeio,cafe", "Conforme análise", "8.5", "8.5", "120", "36", "100000", "3000000",
-      "Propriedade com café, projeto técnico", "Documentos propriedade, projeto técnico, comprovante atividade", "Ativa", new Date(), "Exclusiva para cafeicultura"],
+      "Propriedade com café, projeto técnico", "Documentos propriedade, projeto técnico, comprovante atividade", "Ativa", new Date(), "Exclusiva para cafeicultura",
+      "Custeio do cafezal e colheita; estocagem e aquisição de café; recuperação de cafezais (arranquio, decote, recepa); máquinas e beneficiamento"],
 
     ["L017", "Agricultura Empresarial", "Bancos Credenciados", "Custeio geral (Grande produtor)",
       "custeio", "Acima de R$ 3.5 mi", "14", "14", "12", "0", "500000", "999999999",
-      "Renda acima R$ 3.5 milhões", "Documentos completos, últimos 3 balanços", "Ativa", new Date(), "Maior risco = maior taxa"]
+      "Renda acima R$ 3.5 milhões", "Documentos completos, últimos 3 balanços", "Ativa", new Date(), "Maior risco = maior taxa",
+      "Custeio e investimento de grande porte: insumos, máquinas, infraestrutura e modernização, conforme análise da instituição"]
   ];
 
   linhas.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
-  SHEET_LINHAS.setColumnWidths(1, 17, 80);
+  SHEET_LINHAS.setColumnWidths(1, 18, 80);
   SHEET_LINHAS.getRange("O:O").setHorizontalAlignment("center");
 }
 
@@ -187,7 +205,8 @@ function buscarLinhas(parametros) {
             limiteMax: parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0,
             requisitos: linha[headers.indexOf("Requisitos")] || "",
             documentos: linha[headers.indexOf("Documentos Necessários")] || "",
-            observacoes: linha[headers.indexOf("Observações")] || ""
+            observacoes: linha[headers.indexOf("Observações")] || "",
+            itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || ""
           };
         } catch (e) {
           return null;
@@ -421,7 +440,8 @@ function listarTodasAsLinhas() {
         requisitos: sanitizarValor(linha[headers.indexOf("Requisitos")]),
         documentos: sanitizarValor(linha[headers.indexOf("Documentos Necessários")]),
         status: sanitizarValor(linha[headers.indexOf("Status (Ativa/Inativa)")]) || "Ativa",
-        observacoes: sanitizarValor(linha[headers.indexOf("Observações")])
+        observacoes: sanitizarValor(linha[headers.indexOf("Observações")]),
+        itensFinanciaveis: sanitizarValor(linha[headers.indexOf("Itens Financiáveis")])
       });
     }
 
@@ -468,7 +488,8 @@ function adicionarLinha(dados) {
       "Documentos Necessários": dados.documentos || "",
       "Status (Ativa/Inativa)": dados.status || "Ativa",
       "Data Atualização": new Date(),
-      "Observações": dados.observacoes || ""
+      "Observações": dados.observacoes || "",
+      "Itens Financiáveis": dados.itensFinanciaveis || ""
     };
 
     const novaLinha = headers.map(h => (mapa[h] !== undefined ? mapa[h] : ""));
@@ -724,6 +745,12 @@ window.mostrarResultados = function(linhas) {
       html += '<div class="info-item"><span class="info-label">Requisitos:</span><span class="info-value">' + linha.requisitos + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Documentos:</span><span class="info-value">' + linha.documentos + '</span></div>';
       html += '</div>';
+      if (linha.itensFinanciaveis) {
+        html += '<div style="margin-top: 12px; background: #eef6ee; border-left: 4px solid #28a745; padding: 10px 12px; border-radius: 4px;">' +
+          '<span style="font-weight: 600; color: #1f6b1f; font-size: 13px;">✅ O que pode ser financiado:</span>' +
+          '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.itensFinanciaveis + '</div>' +
+          '</div>';
+      }
       html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
       html += '<button onclick="window.abrirSimulador(' + "'" + linha.nome + "'" + ', ' + linha.taxaMin + ', ' + linha.prazo + ', ' + linha.carencia + ')" style="background: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💰 Simular Parcelas</button>';
       html += '<button onclick="window.exportarPDF()" style="background: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📄 Exportar PDF</button>';
@@ -995,7 +1022,7 @@ window.abrirFormularioNovaLinha = function() {
     id: '', nome: '', orgao: '', finalidadePrincipal: '', finalidades: '',
     enquadramento: 'Conforme análise', taxaMin: '', taxaMax: '', prazo: '',
     carencia: '', limiteMin: '', limiteMax: '', requisitos: '', documentos: '',
-    status: 'Ativa', observacoes: ''
+    status: 'Ativa', observacoes: '', itensFinanciaveis: ''
   };
   window.renderizarFormularioLinha(vazia, true);
 };
@@ -1046,6 +1073,7 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
 
   html += '</div>';
 
+  html += area('edit_itens_financiaveis', 'Itens Financiáveis (o que pode ser financiado)', linha.itensFinanciaveis);
   html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
   html += area('edit_requisitos', 'Requisitos', linha.requisitos);
   html += area('edit_observacoes', 'Observações', linha.observacoes);
@@ -1080,6 +1108,7 @@ window.coletarDadosFormulario = function() {
     documentos: document.getElementById('edit_documentos').value,
     requisitos: document.getElementById('edit_requisitos').value,
     observacoes: document.getElementById('edit_observacoes').value,
+    itensFinanciaveis: document.getElementById('edit_itens_financiaveis').value,
     status: document.getElementById('edit_status').value
   };
 };
@@ -1105,6 +1134,7 @@ window.salvarEdicaoLinha = function(idLinha) {
     'Documentos Necessários': f.documentos,
     'Requisitos': f.requisitos,
     'Observações': f.observacoes,
+    'Itens Financiáveis': f.itensFinanciaveis,
     'Status (Ativa/Inativa)': f.status
   };
 
