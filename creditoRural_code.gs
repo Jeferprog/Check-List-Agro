@@ -277,7 +277,7 @@ function validarProduto(produtoBuscado, linha, headers) {
 
     const camposRelevantes = [
       "Nome Linha", "Finalidade Principal", "Finalidades (tags)",
-      "Itens Financiáveis", "Documentos Necessários", "Observações"
+      "Itens Financiáveis", "Culturas Financiadas", "Documentos Necessários", "Observações"
     ];
     const textoBusca = normalizar(camposRelevantes
       .map(c => {
