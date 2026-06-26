@@ -27,7 +27,7 @@ function inicializarSheetLinhas() {
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
     "Status (Ativa/Inativa)", "Data Atualização", "Observações",
-    "Itens Financiáveis"
+    "Itens Financiáveis", "Culturas Financiadas"
   ];
 
   SHEET_LINHAS.appendRow(headers);
@@ -36,96 +36,121 @@ function inicializarSheetLinhas() {
 
   // Dados base das linhas
   const linhas = [
-    ["L001", "PRONAF B (Microcrédito)", "Banco do Brasil/Caixa", "Microcrédito para pequenos produtores",
-      "custeio,investimento", "Sem limite/R$ 500 mil", "0.5", "2.5", "24", "0", "1000", "25000",
-      "DAP ativa, agricultor familiar", "DAP, RG, CPF, comprovante renda", "Ativa", new Date(), "Modalidade mais acessível",
-      "Ferramentas e pequenos equipamentos; pequenos animais; insumos; pequenas agroindústrias; artesanato e atividades de geração de renda"],
+    ["L001", "PRONAF CUSTEIO AGRÍCOLA Faixa I", "BNDES / Cresol", "Custeio", "agricola,custeio", "Sem limite/R$ 500 mil", "3", "3", "36", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 3 anos para as culturas: Açafrão e Palmito; Até 2 anos para as culturas bienais e manejo florestal sustentável; Até 14 meses para as culturas permanentes; Até 11 meses para as demais culturas. | Norma: CIRCULAR SUP/ADIG No 47/2024-BNDES", "Itens de custeio relacionados à atividade agrícola; Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags). Limitada a 5% do valor do custeio; Até 15% do valor total do orçamento para: reparos ou reformas de bens de produção e de instalações, aquisição de animais de serviço, desmatamento, destoca e similares, inclusive aquisição, transporte, aplicação e incorporação de calcário agrícola.; Despesas de transporte e de frete.; Custos relativos à elaboração de projetos para outorga e licenciamento ambiental.; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABACAXI, ABOBORA(ORGÂNICA), ABOBORA-MORANGA(não orgânica), ABOBRINHA, AÇAÍ CULTIVADO, ALFACE, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMENDOIM, ARROZ, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, BUFALOS (BUBALINOS) LEITE, CACAU CULTIVADO, CARÁ, CEBOLA, CENOURA, CHÁ, CHICÓRIA/ESCAROLA, CHUCHU, COUVE, COUVE-FLOR, ERVAS AROMÁTICAS E CONDIMENTARES, ERVAS MEDICINAIS, FEIJÃO, FEIJÃO CAUPI, HORTALIÇAS, INHAME, LARANJA, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MELANCIA, MELÃO, MILHO (até 25 mil), MORANGO, MOSTARDA, NABO, PAINÇO, PEPINO, PIMENTA, PIMENTÃO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, TANGERINA, TOMATE, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, URUCUM, VAGEM"],
 
-    ["L002", "PRONAF Custeio", "Banco do Brasil/Caixa/BB", "Despesas do ciclo produtivo",
-      "custeio", "Sem limite/R$ 500 mil", "2", "6", "12", "0", "5000", "500000",
-      "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Safra até 12 meses",
-      "Sementes e mudas; fertilizantes e corretivos; defensivos; combustível; mão de obra; ração e insumos pecuários (vacinas, sais minerais); tratos culturais e colheita; antecipação de insumos"],
+    ["L002", "PRONAF CUSTEIO AGRÍCOLA Faixa II", "BNDES / Cresol", "Custeio", "agricola,custeio", "Sem limite/R$ 500 mil", "6.5", "6.5", "36", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 3 anos para as culturas: Açafrão e Palmito; Até 2 anos para as culturas bienais e manejo florestal sustentável; Até 14 meses para as culturas permanentes; Até 11 meses para as demais culturas. | Norma: CIRCULAR SUP/ADIG No 47/2024-BNDES", "Itens de custeio relacionados à atividade agrícola; Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags). Limitada a 5% do valor do custeio; Até 15% do valor total do orçamento para: reparos ou reformas de bens de produção e de instalações, aquisição de animais de serviço, desmatamento, destoca e similares, inclusive aquisição, transporte, aplicação e incorporação de calcário agrícola.; Despesas de transporte e de frete.; Custos relativos à elaboração de projetos para outorga e licenciamento ambiental.; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABACATE, ACÁCIA NEGRA COM PALMEIRA REAL, ALFAFA - AZEVEM, AMEIXA, AMORA, AVEIA, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CENTEIO, CEVADA, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FIGO, FLORES, GIRASSOL, GOIABA, GRAMA, KIWI, LIMÃO, MARACUJA, MAÇÃ, MILHO (acima de 25 mil), MUDAS DIVERSAS, NECTARINA, NOZ, PALMEIRA REAL, PASTAGEM, PERA, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, SORGO, TRITICALE, UVA"],
 
-    ["L003", "PRONAF Investimento", "Banco do Brasil/Caixa/BB", "Máquinas, equipamentos, infraestrutura",
-      "investimento,equipamento", "Sem limite/R$ 500 mil", "5", "5", "120", "36", "10000", "500000",
-      "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico, 3 últimos balanços", "Ativa", new Date(), "Carência de 3 anos",
-      "Tratores, máquinas e implementos; benfeitorias e infraestrutura de produção; animais de produção; conectividade no campo (antenas, roteadores); prevenção e combate a incêndios"],
+    ["L003", "PRONAF CUSTEIO AGRÍCOLA Faixa III", "BNDES / Cresol", "Custeio", "agricola,custeio", "Sem limite/R$ 500 mil", "2", "2", "36", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 3 anos para as culturas: Açafrão e Palmito; Até 2 anos para as culturas bienais e manejo florestal sustentável; Até 14 meses para as culturas permanentes; Até 11 meses para as demais culturas. | Norma: CIRCULAR SUP/ADIG No 47/2024-BNDES", "Itens de custeio relacionados à atividade agrícola; Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags). Limitada a 5% do valor do custeio; Até 15% do valor total do orçamento para: reparos ou reformas de bens de produção e de instalações, aquisição de animais de serviço, desmatamento, destoca e similares, inclusive aquisição, transporte, aplicação e incorporação de calcário agrícola.; Despesas de transporte e de frete.; Custos relativos à elaboração de projetos para outorga e licenciamento ambiental.; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABIU, ABOBORA(ORGÂNICA), ABOBORA-MORANGA (ORGÂNICA), AMORA-PRETA, ANDIROBA, ARATICUM, ARAÇÁ, ARAÇÁ-BOI, ARAÇÁ-PERA, AROEIRA-PIMENTEIRA, ARIÁ, ARUMBEVA, AÇAÍ EXTRATIVO, BABAÇU, BACABA, BACUPARI, BACURI, BARU, BATATA CREM, BELDROEGA, BIRIBÁ, BORRACHA EXTRATIVA, BURITI, BUTIÁ, CACAU EXTRATIVO, CAGAITA, CAJÁ, CAJU, CAJU-DO-CERRADO, CAMBUCI, CAMBUI, CAMU-CAMU, CARÁ AMAZÔNICO, CARÁ-DE-ESPINHO, CARNAÚBA, CASTANHA-DO-PARÁ/CASTANHA-DO-BRASIL, CASTANHA-DE-CUTIA, CASTANHA-DE-GALINHA, CENOURA (ORGÂNICA), CEREJA-DO-RIO-GRANDE, CHICHÁ, CHICÓRIA-DE-CABOCLO, COQUINHO-AZEDO, COPAÍBA, CROÁ, CUBIU, CUPUAÇU, ERVA MATE, FISALIS, GOIABA-SERRANA, GUABIROBA, GUARANÁ, GRUMIXAMA, GUEROBA, JABORANDI, JABUTICABA, JARACATIÁ, JAMBU, JATOBÁ, JENIPAPO, JUÇARA, LICURI, MACAÚBA, MAJOR-GOMES, MANDACARU, MANGABA, MAPATI, MINI-PEPININHO, MORANGA, MURICI, MURUMURU, ORA-PRO-NÓBIS, OSTRA-DE-MANGUE, PATAUÁ, PAJURÁ, PEQUI, PEPERÔMIA, PERA-DO-CERRADO, PIAÇAVA, PINHÃO, PIRARUCU DE MANEJO, PITANGA, PUPUNHA, PUXURI, SAPOTA, SETE-CAPOTES, SORVA, TAIOBA, TAPEREBÁ, TUCUMÃ, UMARI, UMBU, URUCUM, UVA (ORGÂNICA), UVAIA, UXI, MELIPONICULTURA"],
 
-    ["L004", "PRONAF Agroecologia", "Banco do Brasil/Caixa", "Transição para sistemas sustentáveis",
-      "investimento,agroecologia", "Sem limite/R$ 500 mil", "0.5", "0.5", "120", "36", "5000", "300000",
-      "DAP ativa, agricultor familiar, projeto agroecológico", "DAP, RG, CPF, projeto agroecológico", "Ativa", new Date(), "Menor taxa - foco sustentabilidade",
-      "Implantação de sistemas agroecológicos/orgânicos; insumos biológicos; adubação verde; certificação orgânica; recuperação de solo; biofábricas"],
+    ["L004", "PRONAF CUSTEIO AGRÍCOLA Faixa IV", "BNDES / Cresol", "Custeio", "agricola,custeio", "Sem limite/R$ 500 mil", "8", "8", "36", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra (proprietário, posseiro, arrendatário, comodatário, parceiro); Área de terra ≤ 4 módulos fiscais; Renda bruta familiar (últimos 12 meses) ≤ R$500.000,00; Mínimo 50% da renda bruta familiar de exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 3 anos para Açafrão e Palmito; Até 2 anos para culturas bienais e manejo florestal sustentável; Até 14 meses para culturas permanentes; Até 11 meses para demais culturas. | Norma: CIRCULAR SUP/ADIG No 47/2024-BNDES", "Itens de custeio relacionados à atividade agrícola; Despesas de soca e ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags) - limitada a 5% do valor do custeio; Até 15% do valor total do orçamento para: reparos ou reformas de bens de produção e instalações; aquisição de animais de serviço; desmatamento; destoca e similares; aquisição, transporte, aplicação e incorporação de calcário agrícola.; Despesas de transporte e frete; Custos relativos à elaboração de projetos para outorga e licenciamento ambiental; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, plataformas e soluções digitais", "Algodão, SOJA, BUFALOS (BUBALINOS) CARNE"],
 
-    ["L005", "PRONAF Irrigação", "Banco do Brasil/Caixa", "Sistemas de irrigação eficiente",
-      "investimento,irrigacao", "Sem limite/R$ 500 mil", "4", "4", "120", "36", "15000", "400000",
-      "DAP ativa, agricultor familiar, projeto irrigação", "DAP, projeto técnico irrigação, orçamentos", "Ativa", new Date(), "Para modernizar irrigação",
-      "Sistemas de irrigação (gotejamento, aspersão, pivô); motobombas; tubulações; reservatórios; automação hídrica"],
+    ["L005", "PRONAF CUSTEIO PECUÁRIO Faixa I", "BNDES / Cresol", "Custeio", "custeio,pecuaria", "Sem limite/R$ 500 mil", "3", "3", "0", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 20 (vinte) meses, quando o financiamento se destinar a avicultura caipira de postura e até 10 (dez) meses nos demais financiamentos. | Norma: CIRCULAR SUP/ADIG No 47/2024-BNDES", "Itens de custeio relacionados com a atividade pecuária; Aquisição de animais para recria e engorda por exemplo compra de Alevinos que entram na Piscicultura; Aquisição de insumos (medicamentos, vacinas, antiparasitários, sais minerais, vitaminas, etc.); Despesas para colocação de brincos numerados e cápsulas de microchip; Limpeza e restauração de pastagens, fenação, silagem e formação de forragens periódicas; Até 15% do valor do orçamento para pequenas despesas de investimento.; Despesas de transporte e de frete de insumos; Custos relativos à elaboração de projetos para outorga de uso da água e para licenciamento ambiental; Despesas com aquisição de insumos para restauração e recuperação das áreas de reserva legal e das áreas de preservação permanente; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, plataformas e de soluções digitais", "APICULTURA, AQUICULTURA E PESCA, AVICULTURA DE POSTURA, BOVINOS LEITE, CAPRINOCULTURA, OVINOCULTURA"],
 
-    ["L006", "PRONAF Mulher", "Banco do Brasil/Caixa", "Mulheres produtoras rurais",
-      "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "400000",
-      "DAP ativa, mulher, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Exclusivo para mulheres",
-      "Custeio e investimento da atividade (insumos, máquinas, animais, infraestrutura) em projetos liderados por mulheres agricultoras"],
+    ["L006", "PRONAF CUSTEIO PECUÁRIO Faixa II", "BNDES / Cresol", "Custeio", "custeio,pecuaria", "Sem limite/R$ 500 mil", "6.5", "6.5", "0", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 10 (dez) meses nos demais financiamentos. | Norma: CIRCULAR SUP/ADIG No 47/2024-BNDES", "Itens de custeio relacionados com a atividade pecuária; Aquisição de insumos (medicamentos, vacinas, antiparasitários, sais minerais, vitaminas, etc.); Despesas para colocação de brincos numerados e cápsulas de microchip; Limpeza e restauração de pastagens, fenação, silagem e formação de forragens periódicas; Medicamentos, vacinas, antiparasitários, sais minerais, vitaminas entre outros; Até 15% do valor do orçamento pode incluir verbas de pequenas despesas conceituadas como investimento.; Despesas de transporte e de frete de insumos; Custos relativos à elaboração de projetos para outorga de uso da água e para licenciamento ambiental; Despesas com aquisição de insumos para restauração e recuperação das áreas de reserva legal e das áreas de preservação permanente; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, plataformas e de soluções digitais", "DEMAIS CRIAÇÕES NÃO ENQUADRADAS NAS FAIXAS I E IV, AVICULTURA PARA CORTE, SUINOS"],
 
-    ["L007", "PRONAF Jovem", "Banco do Brasil/Caixa", "Beneficiários 16-29 anos",
-      "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "200000",
-      "DAP ativa, jovem 16-29 anos", "DAP, RG, CPF, comprovante idade", "Ativa", new Date(), "Limite menor para jovens",
-      "Estruturação da atividade produtiva por jovens: máquinas, animais, infraestrutura e custeio inicial"],
+    ["L007", "PRONAF CUSTEIO PECUÁRIO Faixa IV", "BNDES / Cresol", "Custeio", "custeio,pecuaria", "Sem limite/R$ 500 mil", "8", "8", "0", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: I - até 6 (seis) meses, no financiamento para aquisição de bovinos e bubalinos para engorda em regime de confinamento;II - até 12 (doze) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para recria em regime extensivo;III - até 8 (oito) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para engorda em regime extensivo;IV - até 20 (vinte) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos, desde que a mesma operação abranja, necessariamente, a recria e a engord", "Itens de custeio relacionados com a atividade pecuária; Aquisição de animais (BOVINOS) para recria em engorda; Aquisição de insumos (medicamentos, vacinas, antiparasitários, sais minerais, vitaminas, etc.); Despesas para colocação de brincos numerados e cápsulas de microchip; Limpeza e restauração de pastagens, fenação, silagem e formação de forragens periódicas; Até 15% do valor do orçamento pode incluir verbas de pequenas despesas conceituadas como investimento.; Despesas de transporte e de frete de insumos; Custos relativos à elaboração de projetos para outorga de uso da água e para licenciamento ambiental; Despesas com aquisição de insumos para restauração e recuperação das áreas de reserva legal e das áreas de preservação permanente; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, plataformas e de soluções digitais", "BOVINOS CORTE (INCLUSIVE AQUISIÇÃO DE ANIMAIS DESTINADOS A RECRIA E ENGORDA)"],
 
-    ["L008", "PRONAMP Custeio", "Banco do Brasil/Caixa/BNDES", "Despesas do ciclo produtivo - Médios produtores",
-      "custeio", "R$ 500 mil/R$ 3.5 mi", "10", "10", "12", "0", "100000", "2000000",
-      "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, comprovante renda", "Ativa", new Date(), "Para produtores médios",
-      "Sementes, fertilizantes, defensivos, corretivos; combustível; mão de obra; insumos pecuários e demais despesas do ciclo produtivo"],
+    ["L008", "PRONAF CUSTEIO INDUSTRIALIZAÇÃO", "Cresol (Poupança Rural)", "Custeio", "custeio,infraestrutura", "Sem limite/R$ 500 mil", "8", "8", "12", "0", "0", "55000000", "Conforme política de crédito da Cresol", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Custeio | Sistemática: LCA/POUPANÇA | IOF: 0,38% | Prazo: Até 12 meses", "Beneficiamento e industrialização da produção (aquisição de embalagens, rótulos, condimentos, conservantes, adoçantes e outros insumos).; Formação de estoques de insumos, matéria-prima, produto final e serviços de apoio à comercialização.; Adiantamentos por conta do preço de produtos entregues para venda.; Financiamento da armazenagem e conservação de produtos para venda futura.; Aquisição de insumos pela cooperativa de produção.", ""],
 
-    ["L009", "PRONAMP Investimento", "Banco do Brasil/Caixa/BNDES", "Máquinas, equipamentos - Médios produtores",
-      "investimento,equipamento", "R$ 500 mil/R$ 3.5 mi", "9", "10", "120", "24", "200000", "3500000",
-      "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, projeto técnico", "Ativa", new Date(), "Limite maior que PRONAF",
-      "Tratores, máquinas e equipamentos; benfeitorias; infraestrutura; modernização e ampliação da propriedade"],
+    ["L009", "CUSTEIO DEMAIS PRODUTORES AGRÍCOLA", "BNDES / Cresol", "Custeio", "agricola,custeio", "Conforme análise", "14", "14", "36", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 3 anos para as culturas: Açafrão e Palmito; Até 2 anos para as culturas bienais e manejo florestal sustentável; Até 14 meses para as culturas permanentes; Até 1 ano para as demais culturas. | Norma: CIRCULAR SUP/ADIG No 51/2024-BNDES", "Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags). Limitada a 5% do valor do custeio; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
 
-    ["L010", "Moderfrota", "BNDES/Bancos Credenciados", "Aquisição de máquinas e implementos",
-      "investimento,equipamento,mecanizacao", "Conforme análise", "9", "13.5", "96", "12", "50000", "5000000",
-      "Médio/grande produtor, documentação completa", "RG, CPF, últimos 3 balanços, orçamentos", "Ativa", new Date(), "Específico para máquinas agrícolas",
-      "Tratores; colheitadeiras; plataformas de corte; pulverizadores; plantadeiras e semeadoras; equipamentos para beneficiamento de café (novos e usados)"],
+    ["L010", "CUSTEIO DEMAIS PRODUTORES AGRÍCOLA Sustentável", "BNDES / Cresol", "Custeio", "agricola,custeio,sustentabilidade", "Conforme análise", "13.5", "13.5", "36", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 3 anos para as culturas: Açafrão e Palmito; Até 2 anos para as culturas bienais e manejo florestal sustentável; Até 14 meses para as culturas permanentes; Até 1 ano para as demais culturas. | Norma: CIRCULAR SUP/ADIG No 51/2024-BNDES", "Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags). Limitada a 5% do valor do custeio; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
 
-    ["L011", "Moderagro", "BNDES/Banco do Brasil/Caixa", "Modernização e produtividade",
-      "investimento,modernizacao", "Conforme análise", "8", "10", "144", "36", "100000", "2200000",
-      "Propriedade registrada, projeto técnico", "Documentos de propriedade, projeto técnico, orçamentos", "Ativa", new Date(), "Foco modernização geral",
-      "Suprimento de água, alimentação animal e tratamento de dejetos; frigoríficos e beneficiamento; equipamentos e embarcações de pesca/aquicultura; matrizes e reprodutores"],
+    ["L011", "CUSTEIO DEMAIS PRODUTORES PECUÁRIO", "BNDES / Cresol", "Custeio", "custeio,pecuaria", "Conforme análise", "14", "14", "0", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: I - até 6 (seis) meses, no financiamento para aquisição de bovinos e bubalinos para engorda em regime de confinamento;II - até 12 (doze) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para recria em regime extensivo;III - até 8 (oito) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para engorda em regime extensivo;IV - até 20 (vinte) meses, quando o financiamento se destinar a avicultura caipira de postura ou quando o financiamento envolver a aquisição de bovinos e bubalinos, de", "Aquisição de animais para recria e engorda; Aquisição de insumos; Despesas para colocação de brincos numerados e cápsulas de microchip; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
 
-    ["L012", "Programa ABC", "BNDES/Banco do Brasil", "Projetos de baixa emissão de carbono",
-      "investimento,sustentabilidade,carbono", "Conforme análise", "8", "10", "120", "36", "50000", "2200000",
-      "Propriedade registrada, projeto baixo carbono", "Projeto técnico ABC, documentos propriedade", "Ativa", new Date(), "Pivot, plantio direto, reflorestamento",
-      "Recuperação de pastagens degradadas; plantio direto; integração lavoura-pecuária-floresta (ILPF); florestas comerciais; tratamento de dejetos"],
+    ["L012", "CUSTEIO DEMAIS PRODUTORES PECUÁRIO Sustentável", "BNDES / Cresol", "Custeio", "custeio,pecuaria,sustentabilidade", "Conforme análise", "13.5", "13.5", "0", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: I - até 6 (seis) meses, no financiamento para aquisição de bovinos e bubalinos para engorda em regime de confinamento;II - até 12 (doze) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para recria em regime extensivo;III - até 8 (oito) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para engorda em regime extensivo;IV - até 20 (vinte) meses, quando o financiamento se destinar a avicultura caipira de postura ou quando o financiamento envolver a aquisição de bovinos e bubalinos, de", "Aquisição de animais para recria e engorda; Aquisição de insumos; Despesas para colocação de brincos numerados e cápsulas de microchip; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
 
-    ["L013", "PCA (Armazéns)", "BNDES", "Construção e ampliação de silos/armazéns",
-      "investimento,infraestrutura,armazenagem", "Conforme análise", "8.5", "10", "120", "24", "100000", "200000000",
-      "Capacidade até 12.000 ton ou cooperativa", "Documentos propriedade, projeto técnico, orçamentos", "Ativa", new Date(), "Para infraestrutura de armazenagem",
-      "Construção, ampliação e modernização de armazéns e silos; equipamentos de secagem, climatização e movimentação de grãos"],
+    ["L013", "PRONAMP CUSTEIO AGRICOLA", "BNDES / Cresol", "Custeio", "agricola,custeio", "R$ 500 mil/R$ 3.5 mi", "10", "10", "36", "0", "0", "1500000", "Ser proprietário rural, posseiro, arrendatário ou parceiro.; Possuir renda bruta anual de até R$3.500.000,00.; Ter, no mínimo, 80% da renda bruta anual originária da atividade agropecuária.", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 36 meses para cultura de açafrão e palmito; Até 24 meses para as culturas bienais e manejo florestal sustentável; Até 14 meses, para as culturas permanentes; Até 11 meses para as demais culturas | Norma: CIRCULAR SUP/ADIG No 49/2024-BNDES", "Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags). Limitada a 5% do valor do custeio; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
 
-    ["L014", "Proirriga", "BNDES", "Sistemas de irrigação eficiente (geral)",
-      "investimento,irrigacao", "Conforme análise", "10.5", "10.5", "120", "24", "20000", "500000",
-      "Projeto irrigação, seguro obrigatório", "Projeto técnico, orçamentos, proponente habilitado", "Ativa", new Date(), "Obrigatório contratar seguro",
-      "Sistemas de irrigação e cultivo protegido (estufas); equipamentos; automação e eficiência hídrica/energética"],
+    ["L014", "PRONAMP CUSTEIO AGRICOLA Sustentável", "BNDES / Cresol", "Custeio", "agricola,custeio,sustentabilidade", "R$ 500 mil/R$ 3.5 mi", "9.5", "9.5", "36", "0", "0", "1500000", "Propriedade ou posse da terra (proprietário, posseiro, arrendatário ou parceiro); Renda bruta anual de até R$ 3.500.000,00; Mínimo 80% da renda bruta anual originária da atividade agropecuária", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: Até 36 meses para cultura de açafrão e palmito; Até 24 meses para as culturas bienais e manejo florestal sustentável; Até 14 meses, para as culturas permanentes; Até 11 meses para as demais culturas | Norma: CIRCULAR SUP/ADIG No 49/2024-BNDES", "Despesas de soca e Ressoca de cana-de-açúcar; Aquisição antecipada de insumos; Aquisição de silos (bags) - limitada a 5% do valor do custeio; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
 
-    ["L015", "RenovAgro", "BNDES", "Recuperação e projetos ambientais",
-      "investimento,ambiental,sustentabilidade", "Conforme análise", "9", "9", "120", "24", "50000", "1500000",
-      "Propriedade registrada, projeto ambiental", "Documentos propriedade, projeto técnico ambiental", "Ativa", new Date(), "Inclui prevenção de incêndios",
-      "Recuperação de áreas degradadas; ILPF; energia renovável; tratamento de resíduos; recomposição ambiental; prevenção e combate a incêndios"],
+    ["L015", "PRONAMP CUSTEIO PECUÁRIO", "BNDES / Cresol", "Custeio", "custeio,pecuaria", "R$ 500 mil/R$ 3.5 mi", "10", "10", "0", "0", "0", "1500000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: I - até 6 (seis) meses, no financiamento para aquisição de bovinos e bubalinos para engorda em regime de confinamento;II - até 12 (doze) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para recria em regime extensivo;III - até 8 (oito) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para engorda em regime extensivo;IV - até 20 (vinte) meses, quando o financiamento se destinar a avicultura caipira de postura ou quando o financiamento envolver a aquisição de bovinos e bubalinos, de", "Aquisição de animais para recria e engorda; Aquisição de insumos; Despesas para colocação de brincos numerados e cápsulas de microchip; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
 
-    ["L016", "Funcafé", "BNDES", "Específica para cafeicultores",
-      "investimento,custeio,cafe", "Conforme análise", "8.5", "8.5", "120", "36", "100000", "3000000",
-      "Propriedade com café, projeto técnico", "Documentos propriedade, projeto técnico, comprovante atividade", "Ativa", new Date(), "Exclusiva para cafeicultura",
-      "Custeio do cafezal e colheita; estocagem e aquisição de café; recuperação de cafezais (arranquio, decote, recepa); máquinas e beneficiamento"],
+    ["L016", "PRONAMP CUSTEIO PECUÁRIO Sustentável", "BNDES / Cresol", "Custeio", "custeio,pecuaria,sustentabilidade", "R$ 500 mil/R$ 3.5 mi", "9.5", "9.5", "0", "0", "0", "1500000", "Propriedade rural, posse, arrendamento ou parceria; Renda bruta anual até R$ 3.500.000,00; Mínimo 80% da renda bruta anual originária da atividade agropecuária", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | Sistemática: DIR/BNDES/POUPANÇA | IOF: 0,38% | Prazo: I - até 6 (seis) meses, no financiamento para aquisição de bovinos e bubalinos para engorda em regime de confinamento;II - até 12 (doze) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para recria em regime extensivo;III - até 8 (oito) meses, quando o financiamento envolver a aquisição de bovinos e bubalinos para engorda em regime extensivo;IV - até 20 (vinte) meses, quando o financiamento se destinar a avicultura caipira de postura ou quando o financiamento envolver a aquisição de bovinos e bubalinos, de", "Aquisição de animais para recria e engorda; Aquisição de insumos; Despesas para colocação de brincos numerados e cápsulas de microchip; Despesas com aquisição de insumos para restauração das áreas de reserva legal e preservação permanente.; Aquisição de bioinsumos; Despesas para manutenção de infraestrutura de rede, de plataformas e de soluções digitais.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
 
-    ["L017", "Agricultura Empresarial", "Bancos Credenciados", "Custeio geral (Grande produtor)",
-      "custeio", "Acima de R$ 3.5 mi", "14", "14", "12", "0", "500000", "999999999",
-      "Renda acima R$ 3.5 milhões", "Documentos completos, últimos 3 balanços", "Ativa", new Date(), "Maior risco = maior taxa",
-      "Custeio e investimento de grande porte: insumos, máquinas, infraestrutura e modernização, conforme análise da instituição"]
+    ["L017", "CUSTEIO AGRÍCOLA - POUPANÇA LIVRE", "Cresol", "Custeio", "agricola,custeio", "Conforme análise", "0", "0", "23", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: 0,38% | Prazo: Até 23 meses", "Atividade produtivas agrícolas diversas no imóvel rural.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, FUMO, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
+
+    ["L018", "CUSTEIO PECUÁRIO - POUPANÇA LIVRE", "Cresol", "Custeio", "custeio,pecuaria", "Conforme análise", "0", "0", "23", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: 0,38% | Prazo: Até 23 meses", "Atividade produtivas pecuárias diversas no imóvel rural.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
+
+    ["L019", "CUSTEIO AGRÍCOLA - CRÉDITO RURAL TFB", "BNDES / Cresol", "Custeio", "agricola,custeio", "Conforme análise", "1.35", "1.35", "36", "0", "0", "250000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: 0,38% | Prazo: Até 3 anos | Norma: CIRCULAR SUP/ADIG Nº 19/2024-BNDES", "Financiamentos destinados ao atendimento das despesas de custeio das atividades agrícolas.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, FUMO, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
+
+    ["L020", "CUSTEIO PECUÁRIO - CRÉDITO RURAL TFB", "BNDES / Cresol", "Custeio", "custeio,pecuaria", "Conforme análise", "1.35", "1.35", "36", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: 0,38% | Prazo: Até 3 anos | Norma: CIRCULAR SUP/ADIG Nº 19/2024-BNDES", "Financiamentos destinados ao atendimento das despesas de custeio das atividades pecuárias.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
+
+    ["L021", "CUSTEIO PECUARIO REG SICOR", "Cresol", "Custeio", "custeio,pecuaria", "Conforme análise", "0", "0", "23", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: 0,38% | Prazo: Até 23 meses", "Atividade produtivas pecuárias diversas no imóvel rural.", "APICULTURA, AVES, AVICULTURA, BOVINOS CORTE, BOVINOS LEITE, BUFALOS (BUBALINOS) CARNE E LEITE, CAPRINOS - CARNE E LEITE, OVINOS, PISCICULTURA, SUINOS"],
+
+    ["L022", "CUSTEIO AGRICOLA REG SICOR", "Cresol", "Custeio", "agricola,custeio", "Conforme análise", "0", "0", "23", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: 0,38% | Prazo: Até 23 meses", "Atividade produtivas agrícolas diversas no imóvel rural.", "ABACATE, ABACAXI, ABOBORA-MORANGA, ABOBORA-MORANGA (ORGÂNICA), ABOBRINHA, ACÁCIA NEGRA COM PALMEIRA REAL, ALFACE, ALFAFA - AZEVEM, ALHO, ALHO NOBRE, ALHO PORÓ, ALMEIRÃO, AMEIXA, AMENDOIM, AMORA, ARROZ, AVEIA, BANANA, BATATA INGLESA, BATATA-DOCE, BERINJELA, BETERRABA, BROCOLIS, CAFÉ, CANA-DE-AÇUCAR, CANOLA DE SEQUEIRO, CAQUI, CEBOLA, CENOURA, CENOURA (ORGÂNICA), CENTEIO, CEVADA, CHICÓRIA/ESCAROLA, CHUCHU, CHÁ, COUVE, COUVE-FLOR, ERVA MATE, ERVILHACA, EUCALIPTO - TRATOS CULTURAIS, EUCALIPTO FLORESTAMENTO E REFLORESTAMENTO, FEIJÃO, FIGO, FLORES, FUMO, GIRASSOL, GOIABA, GRAMA, HORTALIÇAS, KIWI, LARANJA, LIMÃO, MANDIOCA, MANDIOQUINHA (BAROA, SALSA, AIPO), MARACUJA, MAÇÃ, MELANCIA, MELÃO, MILHO (acima de 25 mil), MILHO (até 25 mil), MORANGO, MOSTARDA, MUDAS DIVERSAS, NABO, NECTARINA, NOZ, PAINÇO, PALMEIRA REAL, PASTAGEM, PEPINO, PERA, PIMENTA, PIMENTÃO, PINUS, PITAYA, PLANTAS ORNAMENTAIS, PORONGO (CUIA, CABAÇA), PÊSSEGO, QUIABO, RABANETE, REPOLHO, RÚCULA, SALSA, SOJA, SORGO, TANGERINA, TOMATE CEREJA, TOMATE RASTEIRO, TRIGO, TRITICALE, URUCUM, UVA, UVA (ORGÂNICA), VAGEM"],
+
+    ["L023", "FUNCAFÉ - CUSTEIO AGRICOLA", "Cresol", "Custeio", "agricola,cafe,custeio", "Conforme análise", "13", "13", "20", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: Isento | Prazo: Até 20 meses", "Tratos culturais.; Colheita das lavouras, incluindo as despesas com a aquisição de insumos, mão de obra, operações com máquinas e equipamentos, arrumação, transporte para o terreiro e secagem.", "CAFÉ"],
+
+    ["L024", "FUNCAFÉ - CUSTEIO PARA AQUISIÇÃO DE CAFÉ (FAC)", "Cresol", "Custeio", "cafe,custeio", "Conforme análise", "14.5", "14.5", "12", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: Isento | Prazo: Até 12 meses", "Café verde adquirido diretamente de produtores rurais ou de suas cooperativas ou indiretamente de produtores rurais.; Taxas e Encargos:; Taxa de Juros Anual: 14,5% a.a.; IOF Complementar: Isento; Limites e Prazos:; Limite de Crédito por Beneficiário: Até R$ 3.000.000,00; Percentual de Financiamento: 100% do valor dos itens financiáveis; Prazo Total: Até 12 meses; Prazo de Carência: Sem carência; Modalidades e Códigos:; Modalidades Colmeia:; FUNCAFÉ; 20129; Normas e Regulamentações:; Norma Completa: MCR 1 - 9 - 3; Custeio; FUNCAFÉ - CAPITAL DE GIRO; Objetivo: Custeio; Taxa: 14,5% a.a.; Limite: Até R$ 3.000.000,00; Público: TODOS OS PÚBLICOS; Culturas: -; Ocultar detalhes", ""],
+
+    ["L025", "FUNCAFÉ - CAPITAL DE GIRO", "Cresol", "Custeio", "cafe,custeio", "Conforme análise", "14.5", "14.5", "12", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: Isento | Prazo: Até 12 meses", "Capital de giro; Taxas e Encargos:; Taxa de Juros Anual: 14,5% a.a.; IOF Complementar: Isento; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 3.000.000,00; Percentual de Financiamento: 100% do valor dos itens financiáveis; Prazo Total: Até 12 meses; Modalidades e Códigos:; Modalidades Colmeia:; FUNCAFÉ; 20130; Normas e Regulamentações:; Norma Completa: MCR 1 - 9 - 3; Custeio; FUNCAFÉ - COMERCIALIZAÇÃO; Objetivo: Custeio; Taxa: 13%; Limite: Até R$ 3.000.000,00; Público: TODOS OS PÚBLICOS; Culturas: -; Ocultar detalhes", ""],
+
+    ["L026", "FUNCAFÉ - COMERCIALIZAÇÃO", "Cresol", "Custeio", "cafe,custeio", "Conforme análise", "13", "13", "12", "0", "0", "3000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Custeio | IOF: Isento | Prazo: Até 12 meses", "Despesas próprias da fase sucessiva à coleta da produção, inclusive estocagem; Taxas e Encargos:; Taxa de Juros Anual: 13%; IOF Complementar: Isento; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 3.000.000,00; Percentual de Financiamento: 100% do valor dos itens financiáveis; Prazo Total: Até 12 meses; Condições de Amortização: Pagamento em duas parcelas, a primeira em até 180 dias e a segunda em 360 dias; Modalidades e Códigos:; Modalidades Colmeia:; FUNCAFÉ; 20130; Normas e Regulamentações:; Norma Completa: MCR 1 - 9 - 3; Pronaf Mais Alimentos (Faixa I); Objetivo: Investimento; Taxa: 3%; Limite: Até R$ 250.000,00; Público: PRONAF; Culturas: -; Ocultar detalhes", ""],
+
+    ["L027", "Pronaf Mais Alimentos (Faixa I)", "BNDES / Cresol", "Investimento", "investimento", "Sem limite/R$ 500 mil", "3", "3", "120", "0", "0", "450000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | Sistemática: BNDES, BRDE e Poupança Controlada | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Cultivo protegido - estufas; Silos e armazéns para grãos, frutas, tubérculos, bulbos, hortaliças e fibras; Resfriadores de leite e ordenhadeiras; Aquicultura e pesca; Avicultura de postura não integrada; Caprinocultura e Ovinocultura; Itens relacionados a conectividade no campo; Equipamentos adaptados a pessoas com deficiência, incluindo cadeiras de rodas motorizadas; Importados novos, desde que não haja similar nacional e com a documentação exigida pelo BNDES", ""],
+
+    ["L028", "Pronaf Tratores e Colheitadeiras", "BNDES / Cresol", "Investimento", "investimento,mecanizacao", "Sem limite/R$ 500 mil", "5", "5", "84", "0", "0", "450000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 7 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Aquisição de tratores novos até 80 CV e implementos associados, colheitadeiras e suas plataformas de corte, assim como máquinas agrícolas autopropelidas para pulverização e adubação;; Quando se tratar de tratores, colheitadeiras e máquinas agrícolas autopropelidas para pulverização e adubação, também deve conter o código Mais Alimentos (MDA), observando a descrição mínima e valor máximo de cada item, além do CFI;; Importados novos desde que não haja similar nacional e com documentação exigida pelo BNDES;; Taxas e Encargos:; Taxa de Juros Anual: 5%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: Até R$ 250.000,00 para os demais empreendimentos e finalidades;Itens usados: até R$250.000,00 quando se tratar de colheitadeira automotriz, e de R$160.000,00 para os demais casos;Até R$ 450.000,00 para atividades de suinocultura, avicultura, aquicultura, carcinicul", ""],
+
+    ["L029", "Pronaf Mais Alimentos (Faixa II)", "BNDES / Cresol", "Investimento", "investimento", "Sem limite/R$ 500 mil", "8", "8", "120", "0", "0", "450000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 5 anos (para aquisição de caminhonetes de carga e motocicletas adaptadas à atividade rural);Até 8 anos (para aquisição isolada de matrizes, reprodutores, animais de serviço, sêmen, óvulos e embriões);Até 10 anos (para os demais itens financiáveis) | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Reforma de trator/máquina agrícola; Galpão de armazenagem de máquinas e equipamentos; Construção de sala de ordenha; Máquinas e equipamentos; Caminhonetes de carga (exceto veículos de cabine dupla e motocicletas adequadas às condições rurais); Matrizes e reprodutores; Regularização Fundiária de Imóvel Rural; Importados novos (desde que não haja similar nacional e com documentação exigida pelo BNDES); Restrições:; Caminhonetes de passageiros, caminhonetes mistas e jipes não são financiáveis.; Para caminhões, é necessário código CFI e seguir as regras do Mais Alimentos.; Observar regras do MCR para aquisição de camionetes (modelo, rendas, declaração de 120 dias, NF de fabricante).; Taxas e Encargos:; Taxa de Juros Anual: 8%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: Até R$ 450.000,00 (para suinocultura, avicultura, aquicultura, carcinicultura e fruticu", ""],
+
+    ["L030", "Pronaf Mais alimentos - Máquinas (Faixa III)", "BNDES / Cresol", "Investimento", "investimento,mecanizacao", "Sem limite/R$ 500 mil", "2.5", "2.5", "120", "0", "0", "100000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$150.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Aquisição de máquinas, equipamentos e implementos por Beneficiárias Finais cuja renda bruta familiar anual seja inferior a R$ 150.000,00 (cem mil reais); Taxas e Encargos:; Taxa de Juros Anual: 2,5%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: Até R$100.000,00 para máquinas e equipamentos de pequeno porte.; Prazo Total: Até 10 anos; Prazo de Carência: Até 3 anos para máquinas, equipamentos e implementos; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10038; BRDE 20253; Normas e Regulamentações:; Norma Completa: MCR 1-10 e 1-7-6; Circular BNDES: CIRCULAR SUP/ADIG Nº 64/2025-BNDES; Pronaf Habitação Rural (Faixa II); Objetivo: Investimento; Taxa: 8%; Limite: Até R$ 100.000,00; Público: PRONAF; Culturas: -; Ocultar detalhes", ""],
+
+    ["L031", "Pronaf Habitação Rural (Faixa II)", "BNDES / Cresol", "Investimento", "investimento", "Sem limite/R$ 500 mil", "8", "8", "120", "0", "0", "100000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Construção ou reforma de moradia em imóvel rural de propriedade do mutuário ou de terceiro;; Devendo o CPF de ambos constar como titular em CAF válida, observado que cada mutuário somente pode ter uma operação “em ser” para essa finalidade;; Que seja definida no projeto técnico a viabilidade econômica das atividades desenvolvidas na unidade produtiva do mutuário para pagamento do crédito;; E que, no caso de o objeto do financiamento ser realizado em imóvel rural de terceiro, o proprietário deve avalizar a operação de crédito e concordar em ceder formalmente ao mutuário o local da construção ou a moradia a ser reformada, por prazo não inferior a 25 (vinte e cinco) anos.; Taxas e Encargos:; Taxa de Juros Anual: 8%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 100.000,00; Prazo Total: Até 10 anos; Prazo de Carência: Até 3 anos; Modalidades e Códigos:; M", ""],
+
+    ["L032", "Pronaf Agroindústria (Faixa II)", "BNDES / Cresol", "Investimento", "infraestrutura,investimento", "Sem limite/R$ 500 mil", "8", "8", "120", "0", "0", "50000000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar (últimos 12 meses) até R$500.000,00; Mínimo 50% da renda bruta familiar de exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | Sistemática: BNDES/Poupança | IOF: 0,38% | Prazo: Até 5 anos para financiamento de caminhonetes de carga;Até 10 anos para os demais empreendimentos. | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Investimentos em infraestrutura, beneficiamento, armazenagem, processamento e comercialização da produção agropecuária, produtos florestais e do extrativismo, ou de produtos artesanais, e a exploração de turismo rural (mínimo 80% da produção beneficiada, processada ou comercializada deve ser própria).; Aquisição de equipamentos e programas de informática.; Capital de giro associado (limitado a 35% do financiamento para investimentos).; Cooperativas da agricultura familiar, que apresentem DAP pessoa jurídica ativa ou RICAF ativo para essa forma de organização, e que comprovem que, no mínimo, 75% de seus participantes ativos são Beneficiárias Finais do PRONAF.", ""],
+
+    ["L033", "Pronaf Bioeconomia (Silvicultura)", "BNDES / Cresol", "Investimento", "investimento,sustentabilidade", "Sem limite/R$ 500 mil", "8", "8", "144", "0", "0", "250000", "Apresentação de DAP-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido:; PRONAF; COOPERATIVAS", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | Prazo: Até 12 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Silvicultura (implantar ou manter povoamentos florestais geradores de diferentes produtos, madeireiros e não madeireiros); Taxas e Encargos:; Taxa de Juros Anual: 8%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 250.000,00; Prazo Total: Até 12 anos; Prazo de Carência: Até 8 anos; Modalidades e Códigos:; Normas e Regulamentações:; Norma Completa: MCR 1-10-16; Circular BNDES: CIRCULAR SUP/ADIG Nº 64/2025-BNDES; Pronaf Bioeconomia (Faixa I); Objetivo: Investimento; Taxa: 3%; Limite: Até R$ 250.000,00; Público: PRONAF,COOPERATIVAS; Culturas: -; Ocultar detalhes", ""],
+
+    ["L034", "Pronaf Bioeconomia (Faixa I)", "BNDES / Cresol", "Investimento", "investimento,sustentabilidade", "Sem limite/R$ 500 mil", "3", "3", "120", "0", "0", "250000", "Apresentação de CAF-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$ 500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido:; PRONAF; COOPERATIVAS", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | Sistemática: BNDES, BRDE, Poupança Controlada | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Correção de solo; Turismo rural; Projetos de adequação ambiental; Formação e recuperação de pastagens destinadas à alimentação animal; Itens para irrigação; Infraestrutura de captação, armazenamento e distribuição de água (poço artesiano)", ""],
+
+    ["L035", "Pronaf Bioeconomia (Sistemas Fotovoltaicos)", "BNDES / Cresol", "Investimento", "investimento,sustentabilidade", "Sem limite/R$ 500 mil", "3", "3", "120", "0", "0", "250000", "Apresentação de CAF-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | Sistemática: Finame | IOF: 0% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Aquisição de sistemas, painéis e geradores fotovoltaicos.; Novos que constem do Credenciamento Finame (CFI) do Sistema BNDES.; Importados novos sem similar de fabricação nacional ou usados.; Sistemática Finame, somente Nota fiscal do equipamento, não é permitido nota de serviços ou instalação separado", ""],
+
+    ["L036", "Pronaf Mulher", "BNDES / Cresol", "Investimento", "investimento", "Sem limite/R$ 500 mil", "3", "3", "0", "0", "0", "500000", "Conforme política de crédito da Cresol", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Os mesmos previstos para a Linha PRONAF Mais Alimentos. | Norma: CIRCULAR SUP/ADIG Nº 48/2024-BNDES", "Atendimento de propostas de crédito de mulheres agricultoras, conforme projeto técnico ou proposta simplificada.; Finalidade: Investimento em atividades agrícolas.; Taxas e Encargos:; Taxa de Juros Anual: 3% a 8%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 50.000,00 (renda bruta familiar até R$100.000,00) e R$ 450.000,00 (renda familiar até R$ 500.000,00); Prazo Total: Os mesmos previstos para a Linha PRONAF Mais Alimentos.; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10023; BRDE 20195; BRDE Coletivo 20191; Normas e Regulamentações:; Norma Completa: MCR 1-10 e 1-7-6; CIRCULAR SUP/ADIG Nº 48/2024-BNDES; Circular BNDES: CIRCULAR SUP/ADIG Nº 48/2024-BNDES; Pronaf Microcrédito Grupo \"B\"; Objetivo: Investimento; Taxa: 0.5%; Limite: Até R$ 12.000,00; Público: PRONAF; Culturas: -; Ocultar detalhes", ""],
+
+    ["L037", "Pronaf Microcrédito Grupo \"B\"", "BNDES / Cresol", "Investimento", "investimento", "Sem limite/R$ 500 mil", "0.5", "0.5", "36", "0", "0", "12000", "CAF-Pronaf enquadramento B.Beneficiários cuja renda bruta familiar anual não seja superior a R$50.000,00 e que não contratem trabalho assalariado permanente.; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0.38% | Prazo: Até 3 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Investimentos em atividades agropecuárias e não agropecuárias desenvolvidas no estabelecimento rural ou em áreas comunitárias rurais próximas para portadores de CAF \"B\".; Taxas e Encargos:; Taxa de Juros Anual: 0.5%; IOF Complementar: 0.38%; Limites e Prazos:; Limite de Crédito por Beneficiário: Até R$ 12.000,00 por ano agrícola, independente do nº de operações.; Prazo Total: Até 3 anos; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10026; Normas e Regulamentações:; Norma Completa: MCR 1-10 e 1-7-6; Circular BNDES: CIRCULAR SUP/ADIG Nº 64/2025-BNDES; Pronaf Agroecologia; Objetivo: Investimento; Taxa: 3%; Limite: Até R$ 250.000,00; Público: PRONAF; Culturas: -; Ocultar detalhes", ""],
+
+    ["L038", "Pronaf Agroecologia", "BNDES / Cresol", "Investimento", "investimento,sustentabilidade", "Sem limite/R$ 500 mil", "3", "3", "0", "0", "0", "250000", "Apresentação de CAF-Pronaf; Exploração de terra em diferentes condições (proprietário, posseiro, etc.); Área de terra não superior a 4 módulos fiscais; Renda bruta familiar nos últimos 12 meses até R$500.000,00; Mínimo 50% da renda bruta familiar originada da exploração agropecuária e não agropecuária; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Os mesmos previstos para Linha PRONAF Mais Alimentos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Implantação e manutenção de sistemas de produção agroecológicos ou orgânicos; Taxas e Encargos:; Taxa de Juros Anual: 3%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 250.000,00 + Certificado de Propriedade Agroecológica; Prazo Total: Os mesmos previstos para Linha PRONAF Mais Alimentos; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10022; BRDE 20188; BRDE Coletivo 20193; Normas e Regulamentações:; Norma Completa: MCR 1-10 e 1-7-6; Circular BNDES: CIRCULAR SUP/ADIG Nº 64/2025-BNDES; Pronaf Jovem; Objetivo: Investimento; Taxa: 3%; Limite: Até R$ 35.000,00; Público: PRONAF; Culturas: -; Ocultar detalhes", ""],
+
+    ["L039", "Pronaf Jovem", "BNDES / Cresol", "Investimento", "investimento", "Sem limite/R$ 500 mil", "3", "3", "120", "0", "0", "35000", "Maior de 16 anos e com até 29 anos de idade.; Integrante de unidade familiar.; Atender a uma ou mais condições do MCR 10-10.; Apresentação de CAF-Pronaf.; Público_resumido: PRONAF", "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 64/2025-BNDES", "Mesmas finalidades previstas no Pronaf Mais Alimentos; Taxas e Encargos:; Taxa de Juros Anual: 3%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 35.000,00 por ano agrícola; limitado a 3 financiamentos.; Prazo Total: Até 10 anos; Prazo de Carência: Até 2 anos, podendo ser elevado para até 5 anos, dependendo da atividade e comprovação técnica.; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10027; BRDE 20190; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG Nº 64/2025-BNDES; Pronamp; Objetivo: Investimento; Taxa: 10%; Limite: Até R$ 600.000,00; Público: PRONAMP; Culturas: -; Ocultar detalhes", ""],
+
+    ["L040", "Pronamp", "BNDES / Cresol", "Investimento", "investimento", "R$ 500 mil/R$ 3.5 mi", "10", "10", "96", "0", "0", "600000", "Ser produtor rural (proprietário, posseiro, arrendatário ou parceiro); Renda bruta anual até R$ 3.500.000,00; Mínimo 80% da renda bruta anual originária da atividade agropecuária; Público_resumido: PRONAMP", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 8 anos | Norma: CIRCULAR SUP/ADIG Nº 66/2025-BNDES", "Crédito para inversões fixas e semifixas em bens e serviços relacionados com a atividade agropecuária de médios produtores com renda bruta anual de até R$ 3.500.000,00, no mínimo 80% da renda agrícola comprovada.; Construção, reforma ou ampliação de benfeitorias e instalações permanentes;; Obras de irrigação, açudagem e drenagem;; Florestamento, reflorestamento, supressão de vegetação autorizada pelo órgão ambiental competente, destoca e manejo florestal sustentável;; Formação de lavouras permanentes;; Formação ou recuperação de pastagens;; Telefonia rural, e equipamentos e demais itens relacionados a sistemas de conectividade no campo;; Aquisição de equipamentos empregados na medição de lavouras;; Recuperação ou reforma de máquinas, tratores, embarcações, veículos e equipamentos, desde que destinados especificamente à atividade agropecuária;; Aquisição de veículos, observado o disposto ", ""],
+
+    ["L041", "Pronamp Finame", "BNDES / Cresol", "Investimento", "investimento,mecanizacao", "R$ 500 mil/R$ 3.5 mi", "10", "10", "96", "0", "0", "600000", "Propriedade rural, posse, arrendamento ou parceria; Renda bruta anual até R$ 3.500.000,00; Mínimo 80% da renda bruta anual originária da atividade agropecuária; Público_resumido: PRONAMP", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | Sistemática: Finame (Validação da Nota Fiscal Antes da Liberação) | IOF: 0% | Prazo: Até 8 anos | Norma: CIRCULAR SUP/ADIG Nº 66/2025-BNDES", "Aquisição de máquinas e equipamentos novos com CFI, ou usados (desde que não se enquadrem no MODERFROTA), e importados novos (desde que não haja similar nacional e com a documentação exigida pelo BNDES).; Restrições:; Máquinas e equipamentos usados enquadrados no MODERFROTA; Equipamentos importados novos sem documentação exigida pelo BNDES; Equipamentos importados novos com similar nacional disponível", ""],
+
+    ["L042", "RenovAgro Demais", "BNDES / Cresol", "Investimento", "investimento,sustentabilidade", "Conforme análise", "10", "10", "144", "0", "0", "5000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Prazo será de acordo com o empreendimento financiado:Até 12 anos (florestas);Até 5 anos (aquisição de animais);Até 10 anos (demais finalidades). | Norma: CIRCULAR SUP/ADIG Nº 69/2025-BNDES", "RenovAgro Manejo de solos: correção de solo; RenovAgro Orgânico: implantação e melhoramento de sistemas orgânicos de produção agropecuária; RenovAgro Florestas: implantação, manutenção e melhoramento do manejo de florestas comerciais; RenovAgro Manejo de Resíduos: sistemas de manejo de resíduos oriundos da produção animal para a geração de energia e compostagem; RenovAgro Integração: implantação e melhoramento de sistemas de integração lavoura-pecuária, lavoura-floresta, pecuária-floresta ou lavoura-pecuária-floresta e de sistemas agroflorestais; Taxas e Encargos:; Taxa de Juros Anual: 10%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 5.000.000,00; Percentual de Financiamento: Até 100%; Prazo Total: Prazo será de acordo com o empreendimento financiado:Até 12 anos (florestas);Até 5 anos (aquisição de animais);Até 10 anos (demais finalidades).; Prazo d", ""],
+
+    ["L043", "RenovAgro Ambiental e RenovAgro Recuperação e Pastagem", "BNDES / Cresol", "Investimento", "investimento,sustentabilidade", "Conforme análise", "8.5", "8.5", "144", "0", "0", "5000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0.38% | Prazo: Até 12 anos (Florestas); Até 10 anos (Demais Finalidades) | Norma: CIRCULAR SUP/ADIG Nº 69/2025-BNDES", "Adequação à legislação ambiental.; Recuperação da reserva legal.; Recuperação de áreas de preservação permanente.; Recuperação de áreas degradadas.; Taxas e Encargos:; Taxa de Juros Anual: 8.5%; IOF Complementar: 0.38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 5.000.000,00; Percentual de Financiamento: Até 100% dos itens financiáveis; Prazo Total: Até 12 anos (Florestas); Até 10 anos (Demais Finalidades); Prazo de Carência: Até 8 anos (Florestas); Até 5 anos (Demais Finalidades); Condições de Amortização: Prazo será de acordo com o investimento; Modalidades e Códigos:; Modalidades Colmeia:; BRDE 20211; BNDES 20292; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG Nº 69/2025-BNDES; Inovagro; Objetivo: Investimento; Taxa: 12.5%; Limite: Até R$ 4.000.000,00; Público: DEMAIS PRODUTORES,COOPERATIVAS; Culturas: -; Ocultar detalhes", ""],
+
+    ["L044", "Inovagro", "BNDES / Cresol", "Investimento", "investimento", "Conforme análise", "12.5", "12.5", "120", "0", "0", "4000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | Sistemática: Finame | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 71/2025-BNDES", "Investimentos para incorporação de inovação tecnológica nas propriedades rurais.; Placas para energia solar com Finame.; Máquinas e equipamentos com código Finame.; Instalações (sala de ordenha, aviários e pocilgas) relacionadas à bovinocultura de leite, suínos e aves.; Construção e ampliação de instalações para guarda de máquinas, implementos agrícolas e estocagem de insumos agropecuários.", ""],
+
+    ["L045", "Moderfrota", "BNDES / Cresol", "Investimento", "investimento,mecanizacao", "Conforme análise", "13.5", "13.5", "84", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0% | Prazo: Até 7 anos para itens novos;Até 4 anos para itens usados | Norma: CIRCULAR SUP/ADIG Nº 73/2025-BNDES", "Itens novos com código CFI: tratores e implementos associados, colheitadeiras e suas plataformas de corte, equipamentos para preparo, secagem e beneficiamento de café, máquinas agrícolas autopropelidas para pulverização e adubação.; Itens usados: tratores e colheitadeiras com idade máxima de 8 e 10 anos, respectivamente, isolados ou associados com sua plataforma de corte, máquinas agrícolas autopropelidas para pulverização e adubação, plantadeiras usadas e semeadoras usadas com idade máxima de 5 anos.; Taxas e Encargos:; Taxa de Juros Anual: 13,5%; IOF Complementar: 0%; Limites e Prazos:; Percentual de Financiamento: Até 85% do valor dos bens objeto do financiamento. No caso de maquinário que utilize biometano como combustível, este limite poderá ser elevado para até 100%.; Prazo Total: Até 7 anos para itens novos;Até 4 anos para itens usados; Prazo de Carência: Até 12 meses; Modalidades", ""],
+
+    ["L046", "Moderfrota Pronamp", "BNDES / Cresol", "Investimento", "investimento,mecanizacao", "R$ 500 mil/R$ 3.5 mi", "12.5", "12.5", "84", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0% | Prazo: Até 7 anos para itens novos;Até 4 anos para itens usados | Norma: CIRCULAR SUP/ADIG Nº 73/2025-BNDES", "Itens novos com código CFI: tratores e implementos associados, colheitadeiras e suas plataformas de corte, equipamentos para preparo, secagem e beneficiamento de café, máquinas agrícolas autopropelidas para pulverização e adubação; Itens usados: tratores e colheitadeiras com idade máxima de 8 e 10 anos, respectivamente, isolados ou associados com sua plataforma de corte, máquinas agrícolas autopropelidas para pulverização e adubação, plantadeiras usadas e semeadoras usadas com idade máxima de 5 anos; Taxas e Encargos:; Taxa de Juros Anual: 12,5%; IOF Complementar: 0%; Limites e Prazos:; Percentual de Financiamento: 100%; Prazo Total: Até 7 anos para itens novos;Até 4 anos para itens usados; Prazo de Carência: Até 12 meses; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10012; BRDE 20185; LCA Controlada 20695; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG Nº 73/2025-BN", ""],
+
+    ["L047", "Proirriga", "BNDES / Cresol", "Investimento", "investimento,irrigacao", "Conforme análise", "12.5", "12.5", "96", "0", "0", "3500000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 8 anos | Norma: CIRCULAR SUP/ADIG N° 72/2025-BNDES", "Sistemas de irrigação (inclusive infraestrutura elétrica, reserva de água e equipamento para monitoramento da umidade no solo); Pivôs de Irrigação (contendo código Finame); Cultivo protegido; Taxas e Encargos:; Taxa de Juros Anual: 12,5%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 3.500.000,00; Limite de Crédito por Empreendimento Coletivo: R$ 10.500.000,00; Percentual de Financiamento: Até 100% dos itens financiáveis; Prazo Total: Até 8 anos; Prazo de Carência: Até 1 ano; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 20326; BRDE 20212; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG N° 72/2025-BNDES; PCA Grãos; Objetivo: Investimento; Taxa: 8,5% para financiamento de uma ou mais unidades de armazenagem de grãos que somadas não ultrapassem 12.000 toneladas; Limite: Até R$ 50.000.000,00; Público: DEMAIS PRODUTORES,COOPERATIVAS; Cu", ""],
+
+    ["L048", "PCA Grãos", "BNDES / Cresol", "Investimento", "armazenagem,investimento", "Conforme análise", "8.5", "8.5", "120", "0", "0", "50000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 70/2025-BNDES", "Ampliação, modernização, reforma e construção de novos armazéns destinados à guarda de grãos de até 12.000 toneladas, frutas, tubérculos, bulbos, hortaliças, fibras e açúcar.", "Grãos, Frutas, Tubérculos, Bulbos, Hortaliças, Fibras, Açúcar"],
+
+    ["L049", "PCA Demais", "BNDES / Cresol", "Investimento", "armazenagem,investimento", "Conforme análise", "10", "10", "120", "0", "0", "200000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 70/2025-BNDES", "Ampliação, modernização, reforma e à construção de novos armazéns destinados à guarda de grãos que ultrapasse 12.000 toneladas, frutas, tubérculos, bulbos, hortaliças, fibras e açúcar.; Taxas e Encargos:; Taxa de Juros Anual: 10%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 50.000.000,00 (para investimentos em armazenagem de grãos);R$ 25.000.000,00 (para demais itens financiáveis);R$ 200.000.000,00 (para armazenagem de grãos em cooperativas).; Limite de Crédito por Empreendimento Coletivo: R$ 200.000.000,00 (para armazenagem de grãos em cooperativas); Percentual de Financiamento: Até 100% dos itens financiáveis; Prazo Total: Até 10 anos; Prazo de Carência: Até 2 anos; Modalidades e Códigos:; Modalidades Colmeia:; BNDES 10102; BRDE 20201; BRDE Finame 20512; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG Nº 70/2025-BNDES; Investimento; P", ""],
+
+    ["L050", "PRODECOOP", "BNDES / Cresol", "Investimento", "investimento", "Conforme análise", "13.5", "13.5", "120", "0", "0", "150000000", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 74/2025-BNDES", "Projetos que visem incrementar a competitividade do complexo agroindustrial das cooperativas brasileiras, por meio da modernização dos sistemas produtivos e de comercialização.; Taxas e Encargos:; Taxa de Juros Anual: 13,5%; IOF Complementar: 0,38%; Limites e Prazos:; Limite de Crédito por Beneficiário: R$ 150.000.000,00 por cooperativa, em uma ou mais operações.; Percentual de Financiamento: Até 90% do valor do projeto.; Prazo Total: Até 10 anos; Prazo de Carência: Até 2 anos; Modalidades e Códigos:; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG Nº 74/2025-BNDES; CREDITO RURAL INVESTIMENTO - TFB; Objetivo: Investimento; Taxa: 2,8% + 0,95% + TFB; Limite: Não informado; Público: TODOS OS PÚBLICOS; Culturas: -; Ocultar detalhes", ""],
+
+    ["L051", "CREDITO RURAL INVESTIMENTO - TFB", "BNDES / Cresol", "Investimento", "investimento", "Conforme análise", "2.8", "2.8", "120", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 19/2024-BNDES", "Construção, reforma ou ampliação de benfeitorias e instalações permanentes.; Obras de irrigação, açudagem, drenagem.; Florestamento, reflorestamento, destoca e manejo florestal sustentável.; Formação de lavouras permanentes.; Formação ou recuperação de pastagens.; Eletrificação, inclusive implantação de sistemas para geração e distribuição de energia renovável para consumo próprio.; Telefonia rural e equipamentos e itens relacionados a sistemas de conectividade no campo.; Práticas conservacionistas de uso, manejo e proteção do sistema solo-água-planta, incluindo correção de acidez e fertilidade do solo, e aquisição, transporte, aplicação e incorporação de insumos.; Aquisição de animais para reprodução ou cria.; Restrições:; Não financia máquinas, residência, e turismo; Taxas e Encargos:; Taxa de Juros Anual: 2,8% + 0,95% + TFB; IOF Complementar: 0,38%; Limites e Prazos:; Percentual de Fi", ""],
+
+    ["L052", "CRÉDITO RURAL MÁQUINAS E EQUIPAMENTOS - TFB", "BNDES / Cresol", "Investimento", "investimento,mecanizacao", "Conforme análise", "2.1", "2.1", "120", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | Sistemática: Finame | IOF: 0% | Prazo: Até 10 anos | Norma: CIRCULAR SUP/ADIG Nº 19/2024-BNDES", "Aquisição isolada de máquinas e equipamentos novos para uso na atividade agropecuária. (Somente Novos com Finame)", ""],
+
+    ["L053", "CRÉDITO RURAL COOPERATIVAS - TFB", "BNDES / Cresol", "Investimento", "investimento", "Conforme análise", "4.3", "4.3", "24", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: 0,38% | Prazo: Até 2 anos | Norma: CIRCULAR SUP/ADIG Nº 19/2024-BNDES", "Capital de giro para atender às necessidades operacionais de cooperativas de produtores rurais.; Taxas e Encargos:; Taxa de Juros Anual: 4,3% + 1,35% + TFB; IOF Complementar: 0,38%; Limites e Prazos:; Percentual de Financiamento: Até 100% dos itens financiáveis; Prazo Total: Até 2 anos; Prazo de Carência: Até 6 meses; Modalidades e Códigos:; Modalidades Colmeia:; BNDES Carência trimestral 20348; BNDES Carência Semestral 20349; Normas e Regulamentações:; Circular BNDES: CIRCULAR SUP/ADIG Nº 19/2024-BNDES; FCO RURAL TAXA FIXA - MICRO, PEQUENO E PEQUENO-MÉDIO; Objetivo: Investimento; Taxa: 9.05%; Limite: Não informado; Público: TODOS OS PÚBLICOS; Culturas: -; Ocultar detalhes", ""],
+
+    ["L054", "FCO RURAL TAXA FIXA - MICRO, PEQUENO E PEQUENO-MÉDIO", "FCO / Cresol", "Investimento", "investimento", "Conforme análise", "9.05", "9.05", "120", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | Prazo: Até 10 anos", "", ""],
+
+    ["L055", "INVESTIMENTO RECURSOS LIVRES COM REGISTRO NO SICOR", "Cresol", "Investimento", "investimento", "Conforme análise", "9", "9", "120", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: IOF complementar | Prazo: Poupança até 10 anos", "Os créditos concedidos com recursos livres podem ter por objeto operações de custeio, de investimento, de comercialização ou de industrialização, envolvendo quaisquer produtos de origem vegetal ou animal, inclusive os obtidos em atividades extrativistas.; Taxas e Encargos:; Taxa de Juros Anual: Poupança: de 9% a 25% a.a.RP: de 12% a 45% a.a.; IOF Complementar: IOF complementar; Limites e Prazos:; Percentual de Financiamento: 100% dos itens financiáveis, conforme projeto/orçamento; Prazo Total: Poupança até 10 anos; Prazo de Carência: Até 12 meses; Condições de Amortização: periodicidade mensal ou anual; Modalidades e Códigos:; Modalidades Colmeia:; POUPANÇA LIVRE 20156; Recursos Próprios com Registro no Sicor 7062; Normas e Regulamentações:; Cresol Empresarial BNDES (BNDES Pequenas Empresas); Objetivo: Investimento; Taxa: BNDES: Spread do BNDES: 1,35% a.a. + Spread da Cresol: de 3% a.a a", ""]
   ];
 
   linhas.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
-  SHEET_LINHAS.setColumnWidths(1, 18, 80);
+  SHEET_LINHAS.setColumnWidths(1, 19, 80);
   SHEET_LINHAS.getRange("O:O").setHorizontalAlignment("center");
 }
 
@@ -141,7 +166,8 @@ function inicializarSheetConfig() {
     ["Juros Base (Selic)", "15%", "percent", "Taxa Selic de referência"],
     ["Ano Fiscal", "2025/2026", "text", "Plano Safra atual"],
     ["Contato Suporte", "agro@cresol.com.br", "email", "E-mail para suporte"],
-    ["Últimas Linhas Adicionadas", "Pronaf Irrigação", "text", "Informação das novas linhas"]
+    ["Últimas Linhas Adicionadas", "Pronaf Irrigação", "text", "Informação das novas linhas"],
+    ["Link Consulta Crédito (SICOR/CACR)", "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr", "url", "Link para consulta de crédito já tomado (SICOR/CACR)"]
   ];
 
   configs.forEach(config => SHEET_CONFIG.appendRow(config));
@@ -206,7 +232,10 @@ function buscarLinhas(parametros) {
             requisitos: linha[headers.indexOf("Requisitos")] || "",
             documentos: linha[headers.indexOf("Documentos Necessários")] || "",
             observacoes: linha[headers.indexOf("Observações")] || "",
-            itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || ""
+            itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || "",
+            culturas: linha[headers.indexOf("Culturas Financiadas")] || "",
+            limiteDisponivel: Math.max(0, (parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0) - (parametros.valorTomado || 0)),
+            valorTomado: parametros.valorTomado || 0
           };
         } catch (e) {
           return null;
@@ -222,28 +251,75 @@ function buscarLinhas(parametros) {
   }
 }
 
+/**
+ * Converte texto monetário em número, interpretando "mil" (x1.000) e
+ * "mi"/"milhão"/"milhões" (x1.000.000). Ex: "R$ 500 mil" -> 500000;
+ * "R$ 3.5 mi" -> 3500000.
+ */
+function parseValorRenda(parte) {
+  try {
+    if (!parte) return null;
+    const t = String(parte).toLowerCase().trim();
+
+    const m = t.match(/([\d.,]+)/);
+    if (!m) return null;
+
+    let num = parseFloat(m[1].replace(/\s/g, "").replace(",", "."));
+    if (isNaN(num)) return null;
+
+    // Detecta a unidade. Verifica milhão antes de mil (pois "milhões"
+    // começa com "mil"). "mi" como palavra isolada também é milhão.
+    if (/milh|\bmi\b/.test(t)) {
+      num = num * 1000000;
+    } else if (/\bmil\b/.test(t)) {
+      num = num * 1000;
+    }
+    return num;
+  } catch (e) {
+    return null;
+  }
+}
+
 function validarRenda(renda, enquadramentoTexto) {
   try {
     if (!enquadramentoTexto || enquadramentoTexto === "") return true;
     if (typeof enquadramentoTexto !== "string") return true;
 
-    if (enquadramentoTexto.includes("Conforme análise")) return true;
+    const t = enquadramentoTexto.toLowerCase();
 
-    const partes = enquadramentoTexto.split("/");
-    if (partes.length < 2) return true;
+    // "Conforme análise": não há faixa fixa, não bloqueia
+    if (t.includes("conforme")) return true;
 
-    const minTexto = partes[0].trim();
-    const maxTexto = partes[1].trim();
+    // Formato faixa "min/max" (ex: "Sem limite/R$ 500 mil")
+    if (enquadramentoTexto.includes("/")) {
+      const partes = enquadramentoTexto.split("/");
+      const minTexto = partes[0].trim();
+      const maxTexto = partes[1].trim();
 
-    if (minTexto === "Sem limite") {
-      const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
+      const min = minTexto.toLowerCase().includes("sem limite")
+        ? 0 : (parseValorRenda(minTexto) || 0);
+      const max = maxTexto.toLowerCase().includes("sem limite")
+        ? Infinity : (parseValorRenda(maxTexto) || Infinity);
+
+      return renda >= min && renda <= max;
+    }
+
+    // Formato "Acima de X" (ex: "Acima de R$ 3.5 mi")
+    if (t.includes("acima")) {
+      const min = parseValorRenda(enquadramentoTexto);
+      if (min === null) return true;
+      return renda > min;
+    }
+
+    // Formato "Até X"
+    if (t.includes("até") || t.includes("ate")) {
+      const max = parseValorRenda(enquadramentoTexto);
+      if (max === null) return true;
       return renda <= max;
     }
 
-    const min = parseInt(minTexto.replace(/\D/g, "")) || 0;
-    const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
-
-    return renda >= min && renda <= max;
+    // Formato não reconhecido: não bloqueia
+    return true;
   } catch (e) {
     return true;
   }
@@ -269,7 +345,7 @@ function validarProduto(produtoBuscado, linha, headers) {
 
     const camposRelevantes = [
       "Nome Linha", "Finalidade Principal", "Finalidades (tags)",
-      "Itens Financiáveis", "Documentos Necessários", "Observações"
+      "Itens Financiáveis", "Culturas Financiadas", "Documentos Necessários", "Observações"
     ];
     const textoBusca = normalizar(camposRelevantes
       .map(c => {
@@ -448,7 +524,8 @@ function listarTodasAsLinhas() {
         documentos: sanitizarValor(linha[headers.indexOf("Documentos Necessários")]),
         status: sanitizarValor(linha[headers.indexOf("Status (Ativa/Inativa)")]) || "Ativa",
         observacoes: sanitizarValor(linha[headers.indexOf("Observações")]),
-        itensFinanciaveis: sanitizarValor(linha[headers.indexOf("Itens Financiáveis")])
+        itensFinanciaveis: sanitizarValor(linha[headers.indexOf("Itens Financiáveis")]),
+        culturas: sanitizarValor(linha[headers.indexOf("Culturas Financiadas")])
       });
     }
 
@@ -496,7 +573,8 @@ function adicionarLinha(dados) {
       "Status (Ativa/Inativa)": dados.status || "Ativa",
       "Data Atualização": new Date(),
       "Observações": dados.observacoes || "",
-      "Itens Financiáveis": dados.itensFinanciaveis || ""
+      "Itens Financiáveis": dados.itensFinanciaveis || "",
+      "Culturas Financiadas": dados.culturas || ""
     };
 
     const novaLinha = headers.map(h => (mapa[h] !== undefined ? mapa[h] : ""));
@@ -510,6 +588,53 @@ function adicionarLinha(dados) {
   }
 }
 
+// Parâmetro de configuração que guarda o link de consulta (SICOR/CACR)
+const PARAM_LINK_CONSULTA = "Link Consulta Crédito (SICOR/CACR)";
+
+/**
+ * Retorna o link de consulta cadastrado na aba Configurações.
+ * Se não houver, devolve o link oficial do CACR como padrão.
+ */
+function obterLinkConsulta() {
+  try {
+    const padrao = "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr";
+    if (!SHEET_CONFIG) return padrao;
+
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_LINK_CONSULTA) {
+        const valor = String(dados[i][1] || "").trim();
+        return valor || padrao;
+      }
+    }
+    return padrao;
+  } catch (e) {
+    Logger.log("Erro em obterLinkConsulta: " + e.toString());
+    return "";
+  }
+}
+
+/**
+ * Salva (ou cria) o link de consulta na aba Configurações.
+ */
+function salvarLinkConsulta(url) {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_LINK_CONSULTA) {
+        SHEET_CONFIG.getRange(i + 1, 2).setValue(url);
+        return { sucesso: true };
+      }
+    }
+    // Não existe ainda: cria a linha de parâmetro
+    SHEET_CONFIG.appendRow([PARAM_LINK_CONSULTA, url, "url", "Link para consulta de crédito já tomado (SICOR/CACR)"]);
+    return { sucesso: true };
+  } catch (e) {
+    Logger.log("Erro em salvarLinkConsulta: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
 // ==================== INTERFACE WEB ====================
 
 function doGet() {
@@ -518,6 +643,7 @@ function doGet() {
 
 function obterHTML() {
   const dataAtualizacao = new Date().toLocaleDateString('pt-BR');
+  const linkConsulta = obterLinkConsulta();
   return HtmlService.createHtmlOutput(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -606,9 +732,16 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deixe em branco para ver todas as linhas do tipo selecionado.
 </small>
 </div>
+<div class="grid-2">
 <div class="form-group">
 <label>💰 Renda Bruta Anual (R$)</label>
 <input type="number" id="renda" placeholder="Ex: 150000" min="0" oninput="window.atualizarEnquadramento()">
+</div>
+<div class="form-group">
+<label>🌾 Valor já tomado na cultura (R$) <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional)</span></label>
+<input type="number" id="valorTomado" placeholder="Ex: 50000" min="0">
+<button type="button" onclick="window.abrirConsultaSicor()" style="margin-top: 8px; background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; width: 100%;">🔎 Consultar valor já financiado</button>
+</div>
 </div>
 <div class="form-group">
 <label>👤 Enquadramento Detectado</label>
@@ -622,6 +755,7 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <select id="finalidade" onchange="window.atualizarProdutosDisponiveis()">
 <option value="">-- Selecione --</option>
 <option value="custeio">Custeio (Despesas do ciclo)</option>
+<option value="pecuaria">Pecuária (custeio/investimento)</option>
 <option value="investimento">Investimento (Máquinas/Equipamentos)</option>
 <option value="mecanizacao">Mecanização</option>
 <option value="irrigacao">Irrigação</option>
@@ -650,6 +784,12 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <div class="alert alert-info">
 <strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito - editar, incluir e ativar/inativar.
 </div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">🔗 Link de Consulta de Crédito Tomado (SICOR/CACR)</label>
+<input type="text" id="linkConsultaInput" placeholder="https://..." style="margin-bottom: 10px;">
+<small style="color: #666; display: block; margin-bottom: 10px;">Este link é usado pelo botão "Consultar valor já financiado" na aba Consultar.</small>
+<button type="button" onclick="window.salvarLinkConsulta()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Link</button>
+</div>
 <div style="margin-bottom: 20px;">
 <button onclick="window.abrirFormularioNovaLinha()" style="background: #28a745;">➕ Incluir Nova Linha</button>
 </div>
@@ -667,6 +807,16 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 </div>
 
 <script>
+window.LINK_CONSULTA = '${linkConsulta}';
+
+window.abrirConsultaSicor = function() {
+  if (window.LINK_CONSULTA && window.LINK_CONSULTA.trim() !== '') {
+    window.open(window.LINK_CONSULTA, '_blank');
+  } else {
+    alert('O link de consulta ainda não foi configurado.\\nConfigure-o na aba Administrativo.');
+  }
+};
+
 window.mudarAba = function(event, abaId) {
   document.querySelectorAll('.tab-content').forEach(aba => aba.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -675,13 +825,40 @@ window.mudarAba = function(event, abaId) {
 
   if (abaId === 'admin') {
     window.carregarLinhasAdministrativo();
+    window.carregarLinkConsulta();
   } else if (abaId === 'historico') {
     window.carregarHistorico();
   }
 };
 
+window.carregarLinkConsulta = function() {
+  google.script.run
+    .withSuccessHandler(function(link) {
+      const input = document.getElementById('linkConsultaInput');
+      if (input) input.value = link || '';
+    })
+    .withFailureHandler(function(error) {
+      console.error('Erro ao carregar link:', error);
+    })
+    .obterLinkConsulta();
+};
+
+window.salvarLinkConsulta = function() {
+  const url = document.getElementById('linkConsultaInput').value.trim();
+  google.script.run
+    .withSuccessHandler(function() {
+      window.LINK_CONSULTA = url;
+      window.notificar('<strong>✓ Sucesso!</strong><br>Link de consulta salvo.');
+    })
+    .withFailureHandler(function(error) {
+      window.notificar('<strong>✕ Erro ao salvar:</strong><br>' + error, 'erro');
+    })
+    .salvarLinkConsulta(url);
+};
+
 window.produtosPorTipo = {
-  'custeio': ['Sementes', 'Fertilizantes', 'Defensivos', 'Combustível', 'Mão de obra', 'Aluguel de máquinas'],
+  'custeio': ['Sementes', 'Fertilizantes', 'Defensivos', 'Combustível', 'Mão de obra', 'Animais (recria/engorda)', 'Ração e sais minerais', 'Vacinas e medicamentos', 'Manutenção de pastagens'],
+  'pecuaria': ['Animais (recria/engorda)', 'Ração e sais minerais', 'Vacinas e medicamentos', 'Manutenção de pastagens', 'Bovino, suíno, aves', 'Piscicultura/aquicultura', 'Apicultura'],
   'investimento': ['Máquinas', 'Equipamentos', 'Implementos', 'Infraestrutura', 'Benfeitorias', 'Animais produtivos'],
   'mecanizacao': ['Tratores', 'Colheitadeiras', 'Plantadeiras', 'Pulverizadores', 'Implementos agrícolas'],
   'irrigacao': ['Sistemas de irrigação', 'Pivôs centrais', 'Gotejamento', 'Aspersão', 'Tubulação', 'Motores'],
@@ -735,6 +912,7 @@ window.buscar = function() {
   const renda = parseInt(document.getElementById('renda').value) || 0;
   const enquadramento = document.getElementById('enquadramento').dataset.value || '';
   const finalidade = document.getElementById('finalidade').value;
+  const valorTomado = parseFloat(document.getElementById('valorTomado').value) || 0;
 
   if (!renda || !enquadramento || !finalidade) {
     alert('Por favor, preencha todos os campos obrigatórios');
@@ -753,7 +931,8 @@ window.buscar = function() {
       produto: produto,
       enquadramento: enquadramento,
       renda: renda,
-      finalidade: finalidade
+      finalidade: finalidade,
+      valorTomado: valorTomado
     });
 };
 
@@ -779,6 +958,29 @@ window.mostrarResultados = function(linhas) {
         html += '<div class="itens-financiaveis" style="margin-top: 12px; background: #eef6ee; border-left: 4px solid #28a745; padding: 10px 12px; border-radius: 4px;">' +
           '<span style="font-weight: 600; color: #1f6b1f; font-size: 13px;">✅ O que pode ser financiado:</span>' +
           '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.itensFinanciaveis + '</div>' +
+          '</div>';
+      }
+      if (linha.culturas) {
+        html += '<div class="culturas-financiadas" style="margin-top: 8px; background: #fdf2e6; border-left: 4px solid #f58220; padding: 10px 12px; border-radius: 4px;">' +
+          '<span style="font-weight: 600; color: #b3590f; font-size: 13px;">🌱 Culturas e atividades financiadas:</span>' +
+          '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.culturas + '</div>' +
+          '</div>';
+      }
+      if (linha.valorTomado > 0) {
+        const esgotado = linha.limiteDisponivel <= 0;
+        const bg = esgotado ? '#fdecea' : '#eef6ee';
+        const cor = esgotado ? '#a4282b' : '#1f6b1f';
+        const borda = esgotado ? '#dc3545' : '#28a745';
+        const titulo = esgotado ? '⚠️ Limite possivelmente esgotado' : '💳 Limite disponível para a cultura';
+        let corpo = 'Limite máximo da linha: R$ ' + window.formatarMoeda(linha.limiteMax) +
+          ' &nbsp;|&nbsp; Já tomado: R$ ' + window.formatarMoeda(linha.valorTomado) +
+          '<br><strong>Disponível: R$ ' + window.formatarMoeda(linha.limiteDisponivel) + '</strong>';
+        if (esgotado) {
+          corpo += '<br><em style="font-size: 12px;">O valor já tomado atinge o teto desta linha para a cultura.</em>';
+        }
+        html += '<div class="limite-disponivel" style="margin-top: 8px; background: ' + bg + '; border-left: 4px solid ' + borda + '; padding: 10px 12px; border-radius: 4px;">' +
+          '<span style="font-weight: 600; color: ' + cor + '; font-size: 13px; display: block; margin-bottom: 4px;">' + titulo + '</span>' +
+          '<div style="color: #333; font-size: 13px;">' + corpo + '</div>' +
           '</div>';
       }
       html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
@@ -913,6 +1115,12 @@ window.exportarPDF = function() {
     '.itens-financiaveis { margin-top: 12px; background: #eef6ee !important; border-left: 4px solid #28a745 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
     '.itens-financiaveis span { font-weight: 600; color: #1f6b1f; font-size: 13px; display: block; margin-bottom: 4px; }' +
     '.itens-financiaveis div { color: #333; font-size: 13px; }' +
+    '.culturas-financiadas { margin-top: 8px; background: #fdf2e6 !important; border-left: 4px solid #f58220 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
+    '.culturas-financiadas span { font-weight: 600; color: #b3590f; font-size: 13px; display: block; margin-bottom: 4px; }' +
+    '.culturas-financiadas div { color: #333; font-size: 13px; }' +
+    '.limite-disponivel { margin-top: 8px; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
+    '.limite-disponivel span { font-size: 13px; display: block; margin-bottom: 4px; }' +
+    '.limite-disponivel div { color: #333; font-size: 13px; }' +
     '.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; font-size: 12px; color: #999; page-break-before: avoid; }' +
     '.alert { background: #e8f4f8; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0c5460; }' +
     '@media print { body { padding: 0; } .header { margin-bottom: 20px; } .linha-card { margin-bottom: 15px; } @page { margin: 15mm; } }' +
@@ -1056,7 +1264,7 @@ window.abrirFormularioNovaLinha = function() {
     id: '', nome: '', orgao: '', finalidadePrincipal: '', finalidades: '',
     enquadramento: 'Conforme análise', taxaMin: '', taxaMax: '', prazo: '',
     carencia: '', limiteMin: '', limiteMax: '', requisitos: '', documentos: '',
-    status: 'Ativa', observacoes: '', itensFinanciaveis: ''
+    status: 'Ativa', observacoes: '', itensFinanciaveis: '', culturas: ''
   };
   window.renderizarFormularioLinha(vazia, true);
 };
@@ -1108,6 +1316,7 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
   html += '</div>';
 
   html += area('edit_itens_financiaveis', 'Itens Financiáveis (o que pode ser financiado)', linha.itensFinanciaveis);
+  html += area('edit_culturas', 'Culturas e Atividades Financiadas (custeio - lavouras e pecuária)', linha.culturas);
   html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
   html += area('edit_requisitos', 'Requisitos', linha.requisitos);
   html += area('edit_observacoes', 'Observações', linha.observacoes);
@@ -1143,6 +1352,7 @@ window.coletarDadosFormulario = function() {
     requisitos: document.getElementById('edit_requisitos').value,
     observacoes: document.getElementById('edit_observacoes').value,
     itensFinanciaveis: document.getElementById('edit_itens_financiaveis').value,
+    culturas: document.getElementById('edit_culturas').value,
     status: document.getElementById('edit_status').value
   };
 };
@@ -1169,6 +1379,7 @@ window.salvarEdicaoLinha = function(idLinha) {
     'Requisitos': f.requisitos,
     'Observações': f.observacoes,
     'Itens Financiáveis': f.itensFinanciaveis,
+    'Culturas Financiadas': f.culturas,
     'Status (Ativa/Inativa)': f.status
   };
 
