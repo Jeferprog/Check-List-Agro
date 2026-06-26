@@ -40,13 +40,13 @@ function inicializarSheetLinhas() {
       "custeio,investimento", "Sem limite/R$ 500 mil", "0.5", "2.5", "24", "0", "1000", "25000",
       "DAP ativa, agricultor familiar", "DAP, RG, CPF, comprovante renda", "Ativa", new Date(), "Modalidade mais acessível",
       "Ferramentas e pequenos equipamentos; pequenos animais; insumos; pequenas agroindústrias; artesanato e atividades de geração de renda",
-      "Culturas de subsistência e geração de renda: mandioca, feijão, milho, hortaliças, frutas e pequenas criações"],
+      "Lavouras de subsistência e renda (mandioca, feijão, milho, hortaliças, frutas) e pequenas criações: aves, suínos, peixes (piscicultura) e abelhas (apicultura)"],
 
     ["L002", "PRONAF Custeio", "Banco do Brasil/Caixa/BB", "Despesas do ciclo produtivo",
       "custeio", "Sem limite/R$ 500 mil", "2", "6", "12", "0", "5000", "500000",
       "DAP ativa, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Safra até 12 meses",
       "Sementes e mudas; fertilizantes e corretivos; defensivos; combustível; mão de obra; ração e insumos pecuários (vacinas, sais minerais); tratos culturais e colheita; antecipação de insumos",
-      "Soja, milho, café, trigo, feijão, arroz, mandioca, cebola, uva, hortaliças e fruticultura (conforme ZARC do município)"],
+      "Lavouras: soja, milho, café, trigo, feijão, arroz, mandioca, cebola, uva, hortaliças e fruticultura (conforme ZARC). Pecuária (custeio pecuário): bovinocultura (leite/corte), suinocultura, avicultura, ovino/caprinocultura, piscicultura/aquicultura, apicultura e bubalinocultura"],
 
     ["L003", "PRONAF Investimento", "Banco do Brasil/Caixa/BB", "Máquinas, equipamentos, infraestrutura",
       "investimento,equipamento", "Sem limite/R$ 500 mil", "5", "5", "120", "36", "10000", "500000",
@@ -67,19 +67,19 @@ function inicializarSheetLinhas() {
       "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "400000",
       "DAP ativa, mulher, agricultor familiar", "DAP, RG, CPF, projeto técnico", "Ativa", new Date(), "Exclusivo para mulheres",
       "Custeio e investimento da atividade (insumos, máquinas, animais, infraestrutura) em projetos liderados por mulheres agricultoras",
-      "Mesmas culturas do Pronaf Custeio: grãos, café, hortaliças e fruticultura (conforme ZARC e o projeto)"],
+      "Mesmas atividades do Pronaf Custeio: lavouras (grãos, café, hortaliças, fruticultura) e pecuária (bovino, suíno, aves, ovino/caprino, piscicultura, apicultura), conforme o projeto"],
 
     ["L007", "PRONAF Jovem", "Banco do Brasil/Caixa", "Beneficiários 16-29 anos",
       "investimento,custeio", "Sem limite/R$ 500 mil", "2", "5", "120", "36", "10000", "200000",
       "DAP ativa, jovem 16-29 anos", "DAP, RG, CPF, comprovante idade", "Ativa", new Date(), "Limite menor para jovens",
       "Estruturação da atividade produtiva por jovens: máquinas, animais, infraestrutura e custeio inicial",
-      "Mesmas culturas do Pronaf Custeio: grãos, café, hortaliças e fruticultura (conforme ZARC e o projeto)"],
+      "Mesmas atividades do Pronaf Custeio: lavouras (grãos, café, hortaliças, fruticultura) e pecuária (bovino, suíno, aves, ovino/caprino, piscicultura, apicultura), conforme o projeto"],
 
     ["L008", "PRONAMP Custeio", "Banco do Brasil/Caixa/BNDES", "Despesas do ciclo produtivo - Médios produtores",
       "custeio", "R$ 500 mil/R$ 3.5 mi", "10", "10", "12", "0", "100000", "2000000",
       "Mín 80% renda agrícola, renda até R$ 3.5 mi", "RG, CPF, últimos 2 balanços, comprovante renda", "Ativa", new Date(), "Para produtores médios",
       "Sementes, fertilizantes, defensivos, corretivos; combustível; mão de obra; insumos pecuários e demais despesas do ciclo produtivo",
-      "Soja, milho, trigo, café, feijão, arroz, algodão e demais lavouras comerciais (conforme ZARC)"],
+      "Lavouras: soja, milho, trigo, café, feijão, arroz, algodão e demais lavouras comerciais (conforme ZARC). Pecuária: bovinocultura (corte/leite), suinocultura, avicultura, aquicultura/piscicultura e demais explorações pecuárias"],
 
     ["L009", "PRONAMP Investimento", "Banco do Brasil/Caixa/BNDES", "Máquinas, equipamentos - Médios produtores",
       "investimento,equipamento", "R$ 500 mil/R$ 3.5 mi", "9", "10", "120", "24", "200000", "3500000",
@@ -126,7 +126,7 @@ function inicializarSheetLinhas() {
       "custeio", "Acima de R$ 3.5 mi", "14", "14", "12", "0", "500000", "999999999",
       "Renda acima R$ 3.5 milhões", "Documentos completos, últimos 3 balanços", "Ativa", new Date(), "Maior risco = maior taxa",
       "Custeio e investimento de grande porte: insumos, máquinas, infraestrutura e modernização, conforme análise da instituição",
-      "Grandes lavouras: soja, milho, algodão, cana-de-açúcar, café, trigo e arroz (conforme análise e ZARC)"]
+      "Grandes lavouras (soja, milho, algodão, cana-de-açúcar, café, trigo, arroz) e pecuária empresarial: bovinocultura de corte/leite, avicultura, suinocultura e aquicultura (conforme análise e ZARC)"]
   ];
 
   linhas.forEach(linha => SHEET_LINHAS.appendRow(linha));
@@ -838,7 +838,7 @@ window.salvarLinkConsulta = function() {
 };
 
 window.produtosPorTipo = {
-  'custeio': ['Sementes', 'Fertilizantes', 'Defensivos', 'Combustível', 'Mão de obra', 'Aluguel de máquinas'],
+  'custeio': ['Sementes', 'Fertilizantes', 'Defensivos', 'Combustível', 'Mão de obra', 'Animais (recria/engorda)', 'Ração e sais minerais', 'Vacinas e medicamentos', 'Manutenção de pastagens'],
   'investimento': ['Máquinas', 'Equipamentos', 'Implementos', 'Infraestrutura', 'Benfeitorias', 'Animais produtivos'],
   'mecanizacao': ['Tratores', 'Colheitadeiras', 'Plantadeiras', 'Pulverizadores', 'Implementos agrícolas'],
   'irrigacao': ['Sistemas de irrigação', 'Pivôs centrais', 'Gotejamento', 'Aspersão', 'Tubulação', 'Motores'],
@@ -942,7 +942,7 @@ window.mostrarResultados = function(linhas) {
       }
       if (linha.culturas) {
         html += '<div class="culturas-financiadas" style="margin-top: 8px; background: #fdf2e6; border-left: 4px solid #f58220; padding: 10px 12px; border-radius: 4px;">' +
-          '<span style="font-weight: 600; color: #b3590f; font-size: 13px;">🌱 Culturas financiadas:</span>' +
+          '<span style="font-weight: 600; color: #b3590f; font-size: 13px;">🌱 Culturas e atividades financiadas:</span>' +
           '<div style="color: #333; font-size: 13px; margin-top: 4px;">' + linha.culturas + '</div>' +
           '</div>';
       }
@@ -1296,7 +1296,7 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
   html += '</div>';
 
   html += area('edit_itens_financiaveis', 'Itens Financiáveis (o que pode ser financiado)', linha.itensFinanciaveis);
-  html += area('edit_culturas', 'Culturas Financiadas (apenas custeio)', linha.culturas);
+  html += area('edit_culturas', 'Culturas e Atividades Financiadas (custeio - lavouras e pecuária)', linha.culturas);
   html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
   html += area('edit_requisitos', 'Requisitos', linha.requisitos);
   html += area('edit_observacoes', 'Observações', linha.observacoes);
