@@ -31,7 +31,7 @@ function inicializarSheetLinhas() {
   ];
 
   SHEET_LINHAS.appendRow(headers);
-  SHEET_LINHAS.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#1f4788");
+  SHEET_LINHAS.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#005c46");
   SHEET_LINHAS.getRange(1, 1, 1, headers.length).setFontColor("white");
 
   // Dados base das linhas
@@ -133,7 +133,7 @@ function inicializarSheetConfig() {
   SHEET_CONFIG.clear();
   const headers = ["Parâmetro", "Valor", "Tipo", "Descrição"];
   SHEET_CONFIG.appendRow(headers);
-  SHEET_CONFIG.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#1f4788").setFontColor("white");
+  SHEET_CONFIG.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
 
   const configs = [
     ["Versão Sistema", "1.0", "text", "Versão atual do sistema"],
@@ -153,7 +153,7 @@ function inicializarSheetHistorico() {
   SHEET_HISTORICO.clear();
   const headers = ["Data", "Tipo Consulta", "Produto/Finalidade", "Enquadramento", "Resultado", "Usuário"];
   SHEET_HISTORICO.appendRow(headers);
-  SHEET_HISTORICO.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#1f4788").setFontColor("white");
+  SHEET_HISTORICO.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
 }
 
 // ==================== MOTOR DE BUSCA E REGRAS ====================
@@ -257,19 +257,26 @@ function validarProduto(produtoBuscado, linha, headers) {
    */
   try {
     if (!produtoBuscado || typeof produtoBuscado !== "string") return true;
-    const termo = produtoBuscado.trim().toLowerCase();
+
+    // Normaliza: minúsculas e remove acentos (ex: "café" -> "cafe")
+    const normalizar = txt => String(txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    const termo = normalizar(produtoBuscado.trim());
     if (termo === "") return true;
 
     const camposRelevantes = [
-      "Nome Linha", "Finalidade Principal", "Finalidades (tags)", "Observações"
+      "Nome Linha", "Finalidade Principal", "Finalidades (tags)",
+      "Itens Financiáveis", "Documentos Necessários", "Observações"
     ];
-    const textoBusca = camposRelevantes
+    const textoBusca = normalizar(camposRelevantes
       .map(c => {
         const idx = headers.indexOf(c);
         return idx === -1 ? "" : String(linha[idx] || "");
       })
-      .join(" ")
-      .toLowerCase();
+      .join(" "));
 
     // Quebra a busca em palavras: basta uma palavra casar para aceitar
     const palavras = termo.split(/\s+/).filter(p => p.length >= 3);
@@ -510,46 +517,67 @@ function doGet() {
 }
 
 function obterHTML() {
+  const dataAtualizacao = new Date().toLocaleDateString('pt-BR');
   return HtmlService.createHtmlOutput(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sistema de Crédito Rural - CRESOL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+:root {
+  --primary-green: #005c46;
+  --primary-green-dark: #004736;
+  --accent-orange: #f58220;
+  --accent-orange-dark: #d96f12;
+  --bg-body: #eef1f0;
+  --bg-card: #ffffff;
+  --bg-soft: #f5f6f6;
+  --text-dark: #2b2b2b;
+  --text-muted: #666666;
+  --border: #e0e0e0;
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%); min-height: 100vh; padding: 20px; }
-.container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; }
-.header { background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%); color: white; padding: 30px; text-align: center; }
-.header h1 { font-size: 28px; margin-bottom: 5px; }
-.header p { font-size: 14px; opacity: 0.9; }
-.tabs { display: flex; background: #f5f5f5; border-bottom: 2px solid #ddd; }
-.tab-btn { flex: 1; padding: 15px; background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; color: #666; transition: all 0.3s; border-bottom: 3px solid transparent; }
-.tab-btn.active { color: #1f4788; border-bottom-color: #1f4788; background: white; }
+body { font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-body); color: var(--text-dark); min-height: 100vh; padding: 20px; }
+.container { max-width: 1250px; margin: 0 auto; background: var(--bg-card); border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); overflow: hidden; }
+.header { background: var(--primary-green); color: white; padding: 30px; text-align: center; }
+.header h1 { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+.header p { font-size: 14px; font-weight: 400; opacity: 0.92; }
+.header-badge { display: inline-block; background: var(--accent-orange); color: white; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px; margin-top: 12px; letter-spacing: 0.3px; }
+.header-update { display: block; font-size: 12px; opacity: 0.8; margin-top: 8px; }
+.tabs { display: flex; background: var(--bg-soft); border-bottom: 2px solid var(--border); }
+.tab-btn { flex: 1; padding: 15px; background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; color: var(--text-muted); transition: all 0.25s; border-bottom: 3px solid transparent; }
+.tab-btn:hover { color: var(--primary-green); background: var(--bg-soft); box-shadow: none; transform: none; }
+.tab-btn.active { color: var(--primary-green); border-bottom-color: var(--accent-orange); background: var(--bg-card); font-weight: 700; }
 .tab-content { display: none; padding: 30px; }
 .tab-content.active { display: block; }
 .form-group { margin-bottom: 20px; }
-label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
-input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; font-family: inherit; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: #1f4788; box-shadow: 0 0 0 3px rgba(31, 71, 136, 0.1); }
-button { background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%); color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; }
-button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(31, 71, 136, 0.3); }
-.resultado { background: #f9f9f9; border-left: 4px solid #1f4788; padding: 20px; margin-top: 30px; border-radius: 5px; display: none; }
+label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-dark); }
+input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--text-dark); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(0, 92, 70, 0.12); }
+button { background: var(--accent-orange); color: white; padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; transition: all 0.25s; }
+button:hover { background: var(--accent-orange-dark); transform: translateY(-1px); box-shadow: 0 5px 14px rgba(245, 130, 32, 0.3); }
+.resultado { background: var(--bg-soft); border-left: 4px solid var(--accent-orange); padding: 20px; margin-top: 30px; border-radius: 6px; display: none; }
 .resultado.visible { display: block; }
-.linha-card { background: white; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; transition: all 0.3s; }
-.linha-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
-.linha-card h3 { color: #1f4788; margin-bottom: 10px; font-size: 16px; }
+.linha-card { background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid var(--accent-orange); border-radius: 6px; padding: 18px; margin-bottom: 15px; transition: all 0.25s; }
+.linha-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+.linha-card h3 { color: var(--primary-green); margin-bottom: 10px; font-size: 17px; font-weight: 700; }
 .linha-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
 .info-item { font-size: 13px; }
-.info-label { font-weight: 600; color: #666; }
-.info-value { color: #333; margin-top: 3px; }
-.alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-.alert-info { background: #e8f4f8; color: #0c5460; border-left: 4px solid #0c5460; }
+.info-label { font-weight: 700; color: var(--text-muted); }
+.info-value { color: var(--text-dark); margin-top: 3px; }
+.alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+.alert-info { background: #e6f2ee; color: var(--primary-green-dark); border-left: 4px solid var(--primary-green); }
 .loading { text-align: center; padding: 20px; display: none; }
-.spinner { border: 3px solid #f3f3f3; border-top: 3px solid #1f4788; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
+.spinner { border: 3px solid #e4e7e6; border-top: 3px solid var(--accent-orange); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-@media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } .linha-info { grid-template-columns: 1fr; } .header h1 { font-size: 20px; } .tab-btn { font-size: 12px; } }
+table thead th { background: var(--primary-green) !important; color: white !important; border-bottom: none !important; }
+table tbody tr:nth-child(even) { background: #f7f8f8; }
+@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .linha-info { grid-template-columns: 1fr; } .header h1 { font-size: 22px; } .tab-btn { font-size: 12px; padding: 12px 8px; } .tab-content { padding: 20px; } }
 </style>
 </head>
 <body>
@@ -557,6 +585,8 @@ button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(31, 71, 
 <div class="header">
 <h1>🌾 Sistema de Crédito Rural</h1>
 <p>Consultar linhas de crédito para operações rurais - CRESOL</p>
+<span class="header-badge">Plano Safra 2025/2026</span>
+<span class="header-update">Última atualização: ${dataAtualizacao}</span>
 </div>
 
 <div class="tabs">
@@ -602,8 +632,8 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <option value="cafe">Específico para Café</option>
 </select>
 </div>
-<div id="produtosDisponiveis" style="display: none; background: #e8f4f8; padding: 12px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #0c5460; font-size: 13px;">
-<strong style="color: #0c5460;">💡 Produtos financiáveis:</strong>
+<div id="produtosDisponiveis" style="display: none; background: #e6f2ee; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #005c46; font-size: 13px;">
+<strong style="color: #004736;">💡 Produtos financiáveis:</strong>
 <span id="listaProdutos" style="display: block; margin-top: 5px; color: #333;"></span>
 </div>
 <button id="btnBuscar" onclick="window.buscar()">🔍 Buscar Linhas Disponíveis</button>
@@ -729,7 +759,7 @@ window.buscar = function() {
 
 window.mostrarResultados = function(linhas) {
   document.getElementById('loading').style.display = 'none';
-  let html = '<h2 style="margin-bottom: 20px; color: #1f4788;">Linhas Disponíveis (' + linhas.length + ')</h2>';
+  let html = '<h2 style="margin-bottom: 20px; color: #005c46;">Linhas Disponíveis (' + linhas.length + ')</h2>';
 
   if (linhas.length === 0) {
     html += '<div class="alert alert-info">Nenhuma linha encontrada. Ajuste os parâmetros.</div>';
@@ -752,8 +782,8 @@ window.mostrarResultados = function(linhas) {
           '</div>';
       }
       html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
-      html += '<button onclick="window.abrirSimulador(' + "'" + linha.nome + "'" + ', ' + linha.taxaMin + ', ' + linha.prazo + ', ' + linha.carencia + ')" style="background: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💰 Simular Parcelas</button>';
-      html += '<button onclick="window.exportarPDF()" style="background: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📄 Exportar PDF</button>';
+      html += '<button onclick="window.abrirSimulador(' + "'" + linha.nome + "'" + ', ' + linha.taxaMin + ', ' + linha.prazo + ', ' + linha.carencia + ')" style="background: #005c46; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💰 Simular Parcelas</button>';
+      html += '<button onclick="window.exportarPDF()" style="background: #f58220; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📄 Exportar PDF</button>';
       html += '</div></div>';
     });
   }
@@ -767,7 +797,7 @@ window.abrirSimulador = function(nomeLinha, taxaMin, prazo, carencia) {
   modal.id = 'modalSimulador';
 
   let html = '<div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">' +
-    '<h3 style="margin-bottom: 20px; color: #1f4788;">Simulador de Parcelas</h3>' +
+    '<h3 style="margin-bottom: 20px; color: #005c46;">Simulador de Parcelas</h3>' +
     '<p style="color: #666; margin-bottom: 15px;"><strong>Linha:</strong> ' + nomeLinha + '</p>' +
     '<p style="color: #666; margin-bottom: 15px;"><strong>Taxa:</strong> ' + taxaMin + '% a.a. | <strong>Prazo:</strong> até ' + prazo + ' meses</p>' +
     '<div style="margin-bottom: 15px;">' +
@@ -835,7 +865,7 @@ window.calcularParcelas = function() {
   const rotuloPeriodo = { 1: 'mensais', 3: 'trimestrais', 6: 'semestrais', 12: 'anuais' }[periodicidade] || '';
 
   let html = '<div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-top: 15px;">' +
-    '<h4 style="color: #1f4788; margin-bottom: 10px;">Resultado:</h4>' +
+    '<h4 style="color: #005c46; margin-bottom: 10px;">Resultado:</h4>' +
     '<p><strong>Valor do Crédito:</strong> R$ ' + window.formatarMoeda(valor) + '</p>' +
     '<p><strong>Quantidade de Parcelas:</strong> ' + numParcelas + ' parcela(s) ' + rotuloPeriodo + '</p>' +
     '<p><strong>Valor de Cada Parcela:</strong> R$ ' + window.formatarMoeda(parcela) + '</p>' +
@@ -863,21 +893,22 @@ window.exportarPDF = function() {
     '<head>' +
     '<meta charset="UTF-8">' +
     '<title>Relatório de Crédito Rural</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">' +
     '<style>' +
     '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-    'body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; }' +
-    '.header { background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; page-break-after: avoid; }' +
+    'body { font-family: "Roboto", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; }' +
+    '.header { background: #005c46; color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; page-break-after: avoid; }' +
     '.header h1 { font-size: 28px; margin-bottom: 10px; }' +
     '.header p { font-size: 14px; opacity: 0.9; }' +
     '.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; font-size: 13px; }' +
-    '.meta-item { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 4px; }' +
+    '.meta-item { background: rgba(255,255,255,0.12); padding: 8px 12px; border-radius: 4px; }' +
     '.content { margin-top: 20px; }' +
-    '.linha-card { background: white; border: 1px solid #ddd; border-radius: 5px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }' +
-    '.linha-card h3 { color: #1f4788; margin-bottom: 10px; font-size: 18px; border-bottom: 2px solid #1f4788; padding-bottom: 8px; }' +
+    '.linha-card { background: white; border: 1px solid #ddd; border-left: 4px solid #f58220; border-radius: 5px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }' +
+    '.linha-card h3 { color: #005c46; margin-bottom: 10px; font-size: 18px; border-bottom: 2px solid #005c46; padding-bottom: 8px; }' +
     '.linha-card p { margin: 8px 0; font-size: 13px; color: #666; }' +
     '.linha-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }' +
     '.info-item { background: #f9f9f9; padding: 10px; border-radius: 4px; font-size: 13px; }' +
-    '.info-label { font-weight: 600; color: #1f4788; display: block; margin-bottom: 4px; }' +
+    '.info-label { font-weight: 600; color: #005c46; display: block; margin-bottom: 4px; }' +
     '.info-value { color: #333; font-size: 13px; }' +
     '.itens-financiaveis { margin-top: 12px; background: #eef6ee !important; border-left: 4px solid #28a745 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
     '.itens-financiaveis span { font-weight: 600; color: #1f6b1f; font-size: 13px; display: block; margin-bottom: 4px; }' +
@@ -964,7 +995,7 @@ window.carregarLinhasAdministrativo = function() {
 
 window.renderizarListaLinhas = function() {
   const linhas = window.linhasCache;
-  let html = '<h3 style="margin: 25px 0 15px; color: #1f4788;">Linhas Cadastradas (' + linhas.length + ')</h3>';
+  let html = '<h3 style="margin: 25px 0 15px; color: #005c46;">Linhas Cadastradas (' + linhas.length + ')</h3>';
   html += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">' +
     '<thead style="background: #f5f5f5;"><tr>' +
     '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Nome</th>' +
@@ -988,7 +1019,7 @@ window.renderizarListaLinhas = function() {
       '<td style="padding: 10px; color: #666;">' + window.escaparHtml(linha.orgao) + '</td>' +
       '<td style="padding: 10px; text-align: center;">' + badge + '</td>' +
       '<td style="padding: 10px; text-align: center; white-space: nowrap;">' +
-      '<button onclick="window.editarLinha(' + "'" + linha.id + "'" + ')" style="background: #1f4788; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">✏️ Editar</button>' +
+      '<button onclick="window.editarLinha(' + "'" + linha.id + "'" + ')" style="background: #005c46; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">✏️ Editar</button>' +
       btnToggle +
       '</td></tr>';
   });
@@ -1052,8 +1083,8 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
       '<textarea id="' + id + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;">' + e(valor) + '</textarea></div>';
   };
 
-  let html = '<div style="margin-top: 20px; border: 2px solid #1f4788; padding: 20px; border-radius: 5px; background: #fafbff;">' +
-    '<h3 style="margin-bottom: 20px; color: #1f4788;">' + titulo + '</h3>' +
+  let html = '<div style="margin-top: 20px; border: 2px solid #005c46; padding: 20px; border-radius: 5px; background: #fafbff;">' +
+    '<h3 style="margin-bottom: 20px; color: #005c46;">' + titulo + '</h3>' +
     '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
 
   html += campo('edit_nome', 'Nome Linha', linha.nome);
