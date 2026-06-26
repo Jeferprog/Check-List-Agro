@@ -554,11 +554,222 @@ window.mostrarResultados = function(linhas) {
       html += '<div class="info-item"><span class="info-label">Limite:</span><span class="info-value">R$ ' + window.formatarMoeda(linha.limiteMin) + ' a R$ ' + window.formatarMoeda(linha.limiteMax) + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Requisitos:</span><span class="info-value">' + linha.requisitos + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Documentos:</span><span class="info-value">' + linha.documentos + '</span></div>';
+      html += '</div>';
+      html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
+      html += '<button onclick="window.abrirSimulador(' + "'" + linha.nome + "'" + ', ' + linha.taxaMin + ', ' + linha.prazo + ', ' + linha.carencia + ')" style="background: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💰 Simular Parcelas</button>';
+      html += '<button onclick="window.exportarPDF()" style="background: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📄 Exportar PDF</button>';
       html += '</div></div>';
     });
   }
   document.getElementById('resultadoConteudo').innerHTML = html;
   document.getElementById('resultado').classList.add('visible');
+};
+
+window.abrirSimulador = function(nomeLinha, taxaMin, prazo, carencia) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;';
+  modal.id = 'modalSimulador';
+
+  let html = '<div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">' +
+    '<h3 style="margin-bottom: 20px; color: #1f4788;">Simulador de Parcelas</h3>' +
+    '<p style="color: #666; margin-bottom: 15px;"><strong>Linha:</strong> ' + nomeLinha + '</p>' +
+    '<p style="color: #666; margin-bottom: 15px;"><strong>Taxa:</strong> ' + taxaMin + '% a.a. | <strong>Prazo:</strong> até ' + prazo + ' meses</p>' +
+    '<div style="margin-bottom: 15px;">' +
+    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Valor do Crédito (R$)</label>' +
+    '<input type="number" id="sim_valor" placeholder="100000" step="1000" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+    '</div>' +
+    '<div style="margin-bottom: 15px;">' +
+    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Prazo (meses)</label>' +
+    '<input type="number" id="sim_prazo" value="' + prazo + '" min="1" max="' + prazo + '" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+    '</div>' +
+    '<div style="margin-bottom: 15px;">' +
+    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Anual (%)</label>' +
+    '<input type="number" id="sim_taxa" value="' + taxaMin + '" step="0.1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+    '</div>' +
+    '<button onclick="window.calcularParcelas()" style="width: 100%; background: #28a745; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-bottom: 15px;">Calcular</button>' +
+    '<div id="resultadoSimulador"></div>' +
+    '<button onclick="document.getElementById(' + "'" + 'modalSimulador' + "'" + ').remove();" style="width: 100%; background: #6c757d; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>' +
+    '</div>';
+
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+};
+
+window.calcularParcelas = function() {
+  const valor = parseFloat(document.getElementById('sim_valor').value);
+  const prazo = parseInt(document.getElementById('sim_prazo').value);
+  const taxa = parseFloat(document.getElementById('sim_taxa').value);
+
+  if (!valor || valor <= 0) {
+    alert('Digite um valor válido');
+    return;
+  }
+
+  const taxaMensal = taxa / 100 / 12;
+  const numerador = valor * taxaMensal * Math.pow(1 + taxaMensal, prazo);
+  const denominador = Math.pow(1 + taxaMensal, prazo) - 1;
+  const parcela = numerador / denominador;
+  const totalPago = parcela * prazo;
+  const totalJuros = totalPago - valor;
+
+  let html = '<div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-top: 15px;">' +
+    '<h4 style="color: #1f4788; margin-bottom: 10px;">Resultado:</h4>' +
+    '<p><strong>Valor do Crédito:</strong> R$ ' + window.formatarMoeda(valor) + '</p>' +
+    '<p><strong>Valor da Parcela:</strong> R$ ' + window.formatarMoeda(parcela) + '</p>' +
+    '<p><strong>Total de Juros:</strong> R$ ' + window.formatarMoeda(totalJuros) + '</p>' +
+    '<p><strong>Valor Total a Pagar:</strong> R$ ' + window.formatarMoeda(totalPago) + '</p>' +
+    '<p style="color: #666; font-size: 12px; margin-top: 10px;"><em>*Cálculo sem considerar carência, seguros ou outras taxas.</em></p>' +
+    '</div>';
+
+  document.getElementById('resultadoSimulador').innerHTML = html;
+};
+
+window.exportarPDF = function() {
+  const resultadoDiv = document.getElementById('resultadoConteudo');
+  if (!resultadoDiv || resultadoDiv.innerHTML.trim() === '') {
+    alert('Nenhum resultado para exportar. Realize uma busca primeiro.');
+    return;
+  }
+
+  const titulo = document.querySelector('h2') ? document.querySelector('h2').textContent : 'Linhas de Crédito Rural';
+  const conteudo = resultadoDiv.innerHTML;
+  const dataAtual = new Date().toLocaleDateString('pt-BR');
+
+  const htmlPDF = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Crédito Rural</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: white;
+    padding: 20px;
+  }
+  .header {
+    background: linear-gradient(135deg, #1f4788 0%, #2d5a9a 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    page-break-after: avoid;
+  }
+  .header h1 { font-size: 28px; margin-bottom: 10px; }
+  .header p { font-size: 14px; opacity: 0.9; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; font-size: 13px; }
+  .meta-item { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 4px; }
+  .content { margin-top: 20px; }
+  .linha-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .linha-card h3 {
+    color: #1f4788;
+    margin-bottom: 10px;
+    font-size: 18px;
+    border-bottom: 2px solid #1f4788;
+    padding-bottom: 8px;
+  }
+  .linha-card p {
+    margin: 8px 0;
+    font-size: 13px;
+    color: #666;
+  }
+  .linha-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+  }
+  .info-item {
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .info-label {
+    font-weight: 600;
+    color: #1f4788;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .info-value {
+    color: #333;
+    font-size: 13px;
+  }
+  .footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #ddd;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+    page-break-before: avoid;
+  }
+  .alert {
+    background: #e8f4f8;
+    color: #0c5460;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #0c5460;
+  }
+  @media print {
+    body { padding: 0; }
+    .header { margin-bottom: 20px; }
+    .linha-card { margin-bottom: 15px; }
+    @page { margin: 15mm; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌾 Relatório de Crédito Rural - CRESOL</h1>
+  <p>Consulta de Linhas Disponíveis para Operações Rurais</p>
+  <div class="meta">
+    <div class="meta-item"><strong>Data:</strong> ${dataAtual}</div>
+    <div class="meta-item"><strong>Hora:</strong> ${new Date().toLocaleTimeString('pt-BR')}</div>
+  </div>
+</div>
+
+<div class="content">
+  <div class="alert">
+    <strong>ℹ️ Informações Importantes:</strong> Este relatório apresenta as linhas de crédito disponíveis conforme os critérios de busca.
+    Para contratar um crédito, entre em contato com a agência da CRESOL mais próxima com toda a documentação necessária.
+  </div>
+  ${conteudo}
+</div>
+
+<div class="footer">
+  <p><strong>Sistema de Crédito Rural - CRESOL</strong></p>
+  <p>Relatório gerado automaticamente. As informações contidas neste documento são baseadas no Plano Safra 2025/2026.</p>
+  <p>Para dúvidas, contate: agro@cresol.com.br | Telefone: (54) 3025-2000</p>
+</div>
+
+<script>
+  window.onload = function() {
+    // Dar um tempo para a página renderizar
+    setTimeout(function() {
+      window.print();
+    }, 500);
+  };
+</script>
+</body>
+</html>
+  `;
+
+  const blob = new Blob([htmlPDF], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 };
 
 window.carregarLinhasAdministrativo = function() {
@@ -590,16 +801,98 @@ window.carregarLinhasAdministrativo = function() {
 };
 
 window.editarLinha = function(idLinha) {
-  const msg = document.createElement('div');
-  msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #fff3cd; color: #856404; padding: 15px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10000; max-width: 300px;';
-  msg.innerHTML = '<strong>ℹ️ Edição</strong><br>Função de edição será implementada na próxima versão.<br><strong>ID:</strong> ' + idLinha;
-  document.body.appendChild(msg);
+  google.script.run
+    .withSuccessHandler(window.mostrarFormularioEdicaoCompleto)
+    .withFailureHandler(function(error) {
+      console.error('Erro ao carregar linha:', error);
+    })
+    .obterLinhaCompleta(idLinha);
+};
 
-  setTimeout(function() {
-    msg.style.opacity = '0';
-    msg.style.transition = 'opacity 0.3s';
-    setTimeout(function() { msg.remove(); }, 300);
-  }, 3000);
+window.mostrarFormularioEdicaoCompleto = function(linha) {
+  if (!linha || Object.keys(linha).length === 0) {
+    console.error('Linha não encontrada');
+    return;
+  }
+
+  let html = '<div style="margin-top: 20px; border: 2px solid #1f4788; padding: 20px; border-radius: 5px;">' +
+    '<h3 style="margin-bottom: 20px; color: #1f4788;">Editar: ' + (linha['Nome Linha'] || 'Desconhecido') + '</h3>' +
+    '<form id="formEdicao">';
+
+  html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Nome Linha</label>' +
+    '<input type="text" id="edit_nome" value="' + (linha['Nome Linha'] || '') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Instituição</label>' +
+    '<input type="text" id="edit_orgao" value="' + (linha['Órgão/Instituição'] || '') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Mín (%)</label>' +
+    '<input type="number" id="edit_taxa_min" step="0.1" value="' + (linha['Taxa Mín (%)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Máx (%)</label>' +
+    '<input type="number" id="edit_taxa_max" step="0.1" value="' + (linha['Taxa Máx (%)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Prazo (meses)</label>' +
+    '<input type="number" id="edit_prazo" value="' + (linha['Prazo (meses)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Carência (meses)</label>' +
+    '<input type="number" id="edit_carencia" value="' + (linha['Carência (meses)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Limite Máx (R$)</label>' +
+    '<input type="number" id="edit_limite_max" value="' + (linha['Limite Máx (R$)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Status</label>' +
+    '<select id="edit_status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">' +
+    '<option value="Ativa" ' + (linha['Status (Ativa/Inativa)'] === 'Ativa' ? 'selected' : '') + '>Ativa</option>' +
+    '<option value="Inativa" ' + (linha['Status (Ativa/Inativa)'] === 'Inativa' ? 'selected' : '') + '>Inativa</option>' +
+    '</select></div>';
+
+  html += '</div>';
+
+  html += '<div style="margin-top: 15px;"><label style="display: block; font-weight: 600; margin-bottom: 5px;">Requisitos</label>' +
+    '<textarea id="edit_requisitos" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;">' + (linha['Requisitos'] || '') + '</textarea></div>';
+
+  html += '<div style="margin-top: 15px;"><label style="display: block; font-weight: 600; margin-bottom: 5px;">Observações</label>' +
+    '<textarea id="edit_observacoes" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;">' + (linha['Observações'] || '') + '</textarea></div>';
+
+  html += '<div style="margin-top: 20px; display: flex; gap: 10px;">' +
+    '<button type="button" onclick="window.salvarEdicaoLinha(' + "'" + linha['ID'] + "'" + ')" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✓ Salvar</button>' +
+    '<button type="button" onclick="document.getElementById(' + "'" + 'edicaoConteudo' + "'" + ').innerHTML=' + "'" + "'" + ';" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✕ Cancelar</button>' +
+    '</div>' +
+    '</form></div>';
+
+  document.getElementById('edicaoConteudo').innerHTML = html;
+};
+
+window.salvarEdicaoLinha = function(idLinha) {
+  const dados = {
+    'Nome Linha': document.getElementById('edit_nome').value,
+    'Órgão/Instituição': document.getElementById('edit_orgao').value,
+    'Taxa Mín (%)': parseFloat(document.getElementById('edit_taxa_min').value),
+    'Taxa Máx (%)': parseFloat(document.getElementById('edit_taxa_max').value),
+    'Prazo (meses)': parseInt(document.getElementById('edit_prazo').value),
+    'Carência (meses)': parseInt(document.getElementById('edit_carencia').value),
+    'Limite Máx (R$)': parseInt(document.getElementById('edit_limite_max').value),
+    'Requisitos': document.getElementById('edit_requisitos').value,
+    'Observações': document.getElementById('edit_observacoes').value,
+    'Status (Ativa/Inativa)': document.getElementById('edit_status').value
+  };
+
+  google.script.run
+    .withSuccessHandler(function() {
+      const msg = document.createElement('div');
+      msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10000;';
+      msg.innerHTML = '<strong>✓ Sucesso!</strong><br>Linha atualizada com sucesso.';
+      document.body.appendChild(msg);
+      setTimeout(function() { msg.remove(); }, 3000);
+
+      document.getElementById('edicaoConteudo').innerHTML = '';
+    })
+    .withFailureHandler(function(error) {
+      alert('Erro ao salvar: ' + error);
+    })
+    .atualizarLinha(idLinha, dados);
 };
 
 window.carregarDadosLinha = function() {
