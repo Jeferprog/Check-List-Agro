@@ -309,11 +309,14 @@ function atualizarLinha(idLinha, novosDados) {
 
 function ativarDesativarLinha(idLinha, ativo) {
   /**
-   * Ativa ou desativa uma linha de crédito
+   * Ativa ou desativa uma linha de crédito.
+   * Retorna o novo status para confirmação ao cliente.
    */
-  return atualizarLinha(idLinha, {
-    "Status (Ativa/Inativa)": ativo ? "Ativa" : "Inativa"
+  const novoStatus = ativo ? "Ativa" : "Inativa";
+  const sucesso = atualizarLinha(idLinha, {
+    "Status (Ativa/Inativa)": novoStatus
   });
+  return { sucesso: sucesso, status: novoStatus, id: idLinha };
 }
 
 function obterLinhaCompleta(idLinha) {
@@ -328,7 +331,7 @@ function obterLinhaCompleta(idLinha) {
       if (dados[i][idIdx] === idLinha) {
         const linha = {};
         headers.forEach((header, idx) => {
-          linha[header] = dados[i][idx] || "";
+          linha[header] = sanitizarValor(dados[i][idx]);
         });
         return linha;
       }
@@ -340,7 +343,21 @@ function obterLinhaCompleta(idLinha) {
   }
 }
 
+/**
+ * Converte qualquer valor (incluindo Date) em string/número simples,
+ * evitando problemas de serialização do google.script.run.
+ */
+function sanitizarValor(valor) {
+  if (valor === null || valor === undefined) return "";
+  if (valor instanceof Date) return valor.toLocaleDateString('pt-BR');
+  return valor;
+}
+
 function listarTodasAsLinhas() {
+  /**
+   * Retorna TODAS as linhas com todos os campos sanitizados em uma única
+   * chamada, evitando segundo round-trip ao servidor e erros de serialização.
+   */
   try {
     if (!SHEET_LINHAS) return [];
 
@@ -354,17 +371,79 @@ function listarTodasAsLinhas() {
     for (let i = 1; i < dados.length; i++) {
       const linha = dados[i];
       resultado.push({
-        id: linha[0] || "",
-        nome: linha[1] || "",
-        orgao: linha[2] || ""
+        id: sanitizarValor(linha[headers.indexOf("ID")]),
+        nome: sanitizarValor(linha[headers.indexOf("Nome Linha")]),
+        orgao: sanitizarValor(linha[headers.indexOf("Órgão/Instituição")]),
+        finalidadePrincipal: sanitizarValor(linha[headers.indexOf("Finalidade Principal")]),
+        finalidades: sanitizarValor(linha[headers.indexOf("Finalidades (tags)")]),
+        enquadramento: sanitizarValor(linha[headers.indexOf("Enquadramento (Renda Min/Max)")]),
+        taxaMin: sanitizarValor(linha[headers.indexOf("Taxa Mín (%)")]),
+        taxaMax: sanitizarValor(linha[headers.indexOf("Taxa Máx (%)")]),
+        prazo: sanitizarValor(linha[headers.indexOf("Prazo (meses)")]),
+        carencia: sanitizarValor(linha[headers.indexOf("Carência (meses)")]),
+        limiteMin: sanitizarValor(linha[headers.indexOf("Limite Min (R$)")]),
+        limiteMax: sanitizarValor(linha[headers.indexOf("Limite Máx (R$)")]),
+        requisitos: sanitizarValor(linha[headers.indexOf("Requisitos")]),
+        documentos: sanitizarValor(linha[headers.indexOf("Documentos Necessários")]),
+        status: sanitizarValor(linha[headers.indexOf("Status (Ativa/Inativa)")]) || "Ativa",
+        observacoes: sanitizarValor(linha[headers.indexOf("Observações")])
       });
     }
 
-    Logger.log("Retornando " + resultado.length + " linhas (versão simplificada)");
+    Logger.log("Retornando " + resultado.length + " linhas (versão completa)");
     return resultado;
   } catch (e) {
     Logger.log("Erro em listarTodasAsLinhas: " + e.toString());
     return [];
+  }
+}
+
+/**
+ * Adiciona uma nova linha de crédito gerando automaticamente o próximo ID.
+ */
+function adicionarLinha(dados) {
+  try {
+    const valores = SHEET_LINHAS.getDataRange().getValues();
+    const headers = valores[0];
+
+    // Gerar próximo ID no formato L0XX
+    let maxNum = 0;
+    for (let i = 1; i < valores.length; i++) {
+      const id = String(valores[i][0] || "");
+      const num = parseInt(id.replace(/\D/g, "")) || 0;
+      if (num > maxNum) maxNum = num;
+    }
+    const novoId = "L" + String(maxNum + 1).padStart(3, "0");
+
+    // Montar a linha na ordem correta dos headers
+    const mapa = {
+      "ID": novoId,
+      "Nome Linha": dados.nome || "",
+      "Órgão/Instituição": dados.orgao || "",
+      "Finalidade Principal": dados.finalidadePrincipal || "",
+      "Finalidades (tags)": dados.finalidades || "",
+      "Enquadramento (Renda Min/Max)": dados.enquadramento || "Conforme análise",
+      "Taxa Mín (%)": dados.taxaMin || "0",
+      "Taxa Máx (%)": dados.taxaMax || "0",
+      "Prazo (meses)": dados.prazo || "0",
+      "Carência (meses)": dados.carencia || "0",
+      "Limite Min (R$)": dados.limiteMin || "0",
+      "Limite Máx (R$)": dados.limiteMax || "0",
+      "Requisitos": dados.requisitos || "",
+      "Documentos Necessários": dados.documentos || "",
+      "Status (Ativa/Inativa)": dados.status || "Ativa",
+      "Data Atualização": new Date(),
+      "Observações": dados.observacoes || ""
+    };
+
+    const novaLinha = headers.map(h => (mapa[h] !== undefined ? mapa[h] : ""));
+    SHEET_LINHAS.appendRow(novaLinha);
+
+    Logger.log("✓ Nova linha adicionada: " + novoId);
+    return { sucesso: true, id: novoId };
+  } catch (e) {
+    Logger.log("Erro em adicionarLinha: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
   }
 }
 
@@ -480,15 +559,14 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 
 <div id="admin" class="tab-content">
 <div class="alert alert-info">
-<strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito.
+<strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito - editar, incluir e ativar/inativar.
 </div>
-<div class="form-group">
-<label>Selecione uma linha para editar:</label>
-<select id="linhaParaEditar" onchange="window.carregarDadosLinha()">
-<option value="">-- Selecione uma linha --</option>
-</select>
+<div style="margin-bottom: 20px;">
+<button onclick="window.abrirFormularioNovaLinha()" style="background: #28a745;">➕ Incluir Nova Linha</button>
 </div>
+<div id="formNovaLinha"></div>
 <div id="edicaoConteudo"></div>
+<div id="listaLinhasAdmin"></div>
 </div>
 
 <div id="historico" class="tab-content">
@@ -746,168 +824,258 @@ window.exportarPDF = function() {
   window.open(url, '_blank');
 };
 
+window.linhasCache = [];
+
+window.escaparHtml = function(valor) {
+  if (valor === null || valor === undefined) return '';
+  return String(valor)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+};
+
+window.notificar = function(mensagem, tipo) {
+  const cores = tipo === 'erro'
+    ? { bg: '#f8d7da', fg: '#721c24' }
+    : { bg: '#d4edda', fg: '#155724' };
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: ' + cores.bg + '; color: ' + cores.fg + '; padding: 15px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10000; max-width: 320px;';
+  msg.innerHTML = mensagem;
+  document.body.appendChild(msg);
+  setTimeout(function() { msg.remove(); }, 3500);
+};
+
 window.carregarLinhasAdministrativo = function() {
+  const lista = document.getElementById('listaLinhasAdmin');
+  lista.innerHTML = '<p style="color: #666; padding: 10px;">Carregando linhas...</p>';
+
   google.script.run
     .withSuccessHandler(function(linhas) {
-      const select = document.getElementById('linhaParaEditar');
-      select.innerHTML = '<option value="">-- Selecione uma linha --</option>';
-
       if (!linhas || !Array.isArray(linhas) || linhas.length === 0) {
-        select.innerHTML += '<option disabled>Nenhuma linha disponível</option>';
+        lista.innerHTML = '<p style="color: #999; padding: 10px;">Nenhuma linha cadastrada.</p>';
         return;
       }
-
-      linhas.forEach((linha) => {
-        const option = document.createElement('option');
-        option.value = linha.id || '';
-        option.textContent = linha.nome || 'Sem nome';
-        select.appendChild(option);
-      });
-
+      window.linhasCache = linhas;
+      window.renderizarListaLinhas();
       console.log('Linhas carregadas: ' + linhas.length);
     })
     .withFailureHandler(function(error) {
       console.error('Erro ao carregar linhas:', error);
-      const select = document.getElementById('linhaParaEditar');
-      select.innerHTML = '<option disabled>Erro ao carregar</option>';
+      lista.innerHTML = '<p style="color: red; padding: 10px;">Erro ao carregar linhas: ' + error + '</p>';
     })
     .listarTodasAsLinhas();
 };
 
-window.editarLinha = function(idLinha) {
-  google.script.run
-    .withSuccessHandler(window.mostrarFormularioEdicaoCompleto)
-    .withFailureHandler(function(error) {
-      console.error('Erro ao carregar linha:', error);
-    })
-    .obterLinhaCompleta(idLinha);
+window.renderizarListaLinhas = function() {
+  const linhas = window.linhasCache;
+  let html = '<h3 style="margin: 25px 0 15px; color: #1f4788;">Linhas Cadastradas (' + linhas.length + ')</h3>';
+  html += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">' +
+    '<thead style="background: #f5f5f5;"><tr>' +
+    '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Nome</th>' +
+    '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Instituição</th>' +
+    '<th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">Status</th>' +
+    '<th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">Ações</th>' +
+    '</tr></thead><tbody>';
+
+  linhas.forEach(function(linha) {
+    const ativa = linha.status === 'Ativa';
+    const badge = ativa
+      ? '<span style="background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">● Ativa</span>'
+      : '<span style="background: #f8d7da; color: #721c24; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">● Inativa</span>';
+
+    const btnToggle = ativa
+      ? '<button onclick="window.alternarStatusLinha(' + "'" + linha.id + "'" + ', false)" style="background: #ffc107; color: #333; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">⏸ Inativar</button>'
+      : '<button onclick="window.alternarStatusLinha(' + "'" + linha.id + "'" + ', true)" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">▶ Ativar</button>';
+
+    html += '<tr style="border-bottom: 1px solid #eee;">' +
+      '<td style="padding: 10px;">' + window.escaparHtml(linha.nome) + '</td>' +
+      '<td style="padding: 10px; color: #666;">' + window.escaparHtml(linha.orgao) + '</td>' +
+      '<td style="padding: 10px; text-align: center;">' + badge + '</td>' +
+      '<td style="padding: 10px; text-align: center; white-space: nowrap;">' +
+      '<button onclick="window.editarLinha(' + "'" + linha.id + "'" + ')" style="background: #1f4788; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">✏️ Editar</button>' +
+      btnToggle +
+      '</td></tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('listaLinhasAdmin').innerHTML = html;
 };
 
-window.mostrarFormularioEdicaoCompleto = function(linha) {
-  if (!linha || Object.keys(linha).length === 0) {
-    console.error('Linha não encontrada');
+window.alternarStatusLinha = function(idLinha, ativar) {
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      const linha = window.linhasCache.find(function(l) { return l.id === idLinha; });
+      if (linha) linha.status = ativar ? 'Ativa' : 'Inativa';
+      window.renderizarListaLinhas();
+      window.notificar('<strong>✓ Sucesso!</strong><br>Linha ' + (ativar ? 'ativada' : 'inativada') + '.');
+    })
+    .withFailureHandler(function(error) {
+      window.notificar('<strong>✕ Erro:</strong><br>' + error, 'erro');
+    })
+    .ativarDesativarLinha(idLinha, ativar);
+};
+
+window.editarLinha = function(idLinha) {
+  const linha = window.linhasCache.find(function(l) { return l.id === idLinha; });
+  if (!linha) {
+    window.notificar('<strong>✕ Erro:</strong><br>Linha não encontrada.', 'erro');
     return;
   }
+  window.renderizarFormularioLinha(linha, false);
+};
 
-  let html = '<div style="margin-top: 20px; border: 2px solid #1f4788; padding: 20px; border-radius: 5px;">' +
-    '<h3 style="margin-bottom: 20px; color: #1f4788;">Editar: ' + (linha['Nome Linha'] || 'Desconhecido') + '</h3>' +
-    '<form id="formEdicao">';
+window.abrirFormularioNovaLinha = function() {
+  const vazia = {
+    id: '', nome: '', orgao: '', finalidadePrincipal: '', finalidades: '',
+    enquadramento: 'Conforme análise', taxaMin: '', taxaMax: '', prazo: '',
+    carencia: '', limiteMin: '', limiteMax: '', requisitos: '', documentos: '',
+    status: 'Ativa', observacoes: ''
+  };
+  window.renderizarFormularioLinha(vazia, true);
+};
 
-  html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
+/**
+ * Renderiza o formulário de edição/inclusão. Se novaLinha=true, é inclusão.
+ */
+window.renderizarFormularioLinha = function(linha, novaLinha) {
+  const e = window.escaparHtml;
+  const containerId = novaLinha ? 'formNovaLinha' : 'edicaoConteudo';
+  const outroId = novaLinha ? 'edicaoConteudo' : 'formNovaLinha';
+  document.getElementById(outroId).innerHTML = '';
 
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Nome Linha</label>' +
-    '<input type="text" id="edit_nome" value="' + (linha['Nome Linha'] || '') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+  const titulo = novaLinha ? '➕ Incluir Nova Linha' : '✏️ Editar: ' + e(linha.nome);
 
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Instituição</label>' +
-    '<input type="text" id="edit_orgao" value="' + (linha['Órgão/Instituição'] || '') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+  const campo = function(id, label, valor, tipo, step) {
+    const t = tipo || 'text';
+    const s = step ? ' step="' + step + '"' : '';
+    return '<div><label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">' + label + '</label>' +
+      '<input type="' + t + '" id="' + id + '"' + s + ' value="' + e(valor) + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+  };
+  const area = function(id, label, valor) {
+    return '<div style="margin-top: 15px;"><label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">' + label + '</label>' +
+      '<textarea id="' + id + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;">' + e(valor) + '</textarea></div>';
+  };
 
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Mín (%)</label>' +
-    '<input type="number" id="edit_taxa_min" step="0.1" value="' + (linha['Taxa Mín (%)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+  let html = '<div style="margin-top: 20px; border: 2px solid #1f4788; padding: 20px; border-radius: 5px; background: #fafbff;">' +
+    '<h3 style="margin-bottom: 20px; color: #1f4788;">' + titulo + '</h3>' +
+    '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
 
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Máx (%)</label>' +
-    '<input type="number" id="edit_taxa_max" step="0.1" value="' + (linha['Taxa Máx (%)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
+  html += campo('edit_nome', 'Nome Linha', linha.nome);
+  html += campo('edit_orgao', 'Instituição', linha.orgao);
+  html += campo('edit_finalidade_principal', 'Finalidade Principal', linha.finalidadePrincipal);
+  html += campo('edit_finalidades', 'Finalidades (tags, separadas por vírgula)', linha.finalidades);
+  html += campo('edit_enquadramento', 'Enquadramento (ex: Sem limite/R$ 500 mil)', linha.enquadramento);
+  html += campo('edit_taxa_min', 'Taxa Mín (%)', linha.taxaMin, 'number', '0.1');
+  html += campo('edit_taxa_max', 'Taxa Máx (%)', linha.taxaMax, 'number', '0.1');
+  html += campo('edit_prazo', 'Prazo (meses)', linha.prazo, 'number');
+  html += campo('edit_carencia', 'Carência (meses)', linha.carencia, 'number');
+  html += campo('edit_limite_min', 'Limite Min (R$)', linha.limiteMin, 'number');
+  html += campo('edit_limite_max', 'Limite Máx (R$)', linha.limiteMax, 'number');
 
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Prazo (meses)</label>' +
-    '<input type="number" id="edit_prazo" value="' + (linha['Prazo (meses)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
-
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Carência (meses)</label>' +
-    '<input type="number" id="edit_carencia" value="' + (linha['Carência (meses)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
-
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Limite Máx (R$)</label>' +
-    '<input type="number" id="edit_limite_max" value="' + (linha['Limite Máx (R$)'] || '0') + '" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></div>';
-
-  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px;">Status</label>' +
+  html += '<div><label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Status</label>' +
     '<select id="edit_status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">' +
-    '<option value="Ativa" ' + (linha['Status (Ativa/Inativa)'] === 'Ativa' ? 'selected' : '') + '>Ativa</option>' +
-    '<option value="Inativa" ' + (linha['Status (Ativa/Inativa)'] === 'Inativa' ? 'selected' : '') + '>Inativa</option>' +
+    '<option value="Ativa"' + (linha.status === 'Ativa' ? ' selected' : '') + '>Ativa</option>' +
+    '<option value="Inativa"' + (linha.status === 'Inativa' ? ' selected' : '') + '>Inativa</option>' +
     '</select></div>';
 
   html += '</div>';
 
-  html += '<div style="margin-top: 15px;"><label style="display: block; font-weight: 600; margin-bottom: 5px;">Requisitos</label>' +
-    '<textarea id="edit_requisitos" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;">' + (linha['Requisitos'] || '') + '</textarea></div>';
+  html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
+  html += area('edit_requisitos', 'Requisitos', linha.requisitos);
+  html += area('edit_observacoes', 'Observações', linha.observacoes);
 
-  html += '<div style="margin-top: 15px;"><label style="display: block; font-weight: 600; margin-bottom: 5px;">Observações</label>' +
-    '<textarea id="edit_observacoes" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;">' + (linha['Observações'] || '') + '</textarea></div>';
+  const acao = novaLinha
+    ? 'window.salvarNovaLinha()'
+    : 'window.salvarEdicaoLinha(' + "'" + linha.id + "'" + ')';
+  const rotuloSalvar = novaLinha ? '✓ Adicionar Linha' : '✓ Salvar Alterações';
 
   html += '<div style="margin-top: 20px; display: flex; gap: 10px;">' +
-    '<button type="button" onclick="window.salvarEdicaoLinha(' + "'" + linha['ID'] + "'" + ')" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✓ Salvar</button>' +
-    '<button type="button" onclick="document.getElementById(' + "'" + 'edicaoConteudo' + "'" + ').innerHTML=' + "'" + "'" + ';" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✕ Cancelar</button>' +
-    '</div>' +
-    '</form></div>';
+    '<button type="button" onclick="' + acao + '" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">' + rotuloSalvar + '</button>' +
+    '<button type="button" onclick="document.getElementById(' + "'" + containerId + "'" + ').innerHTML=' + "''" + ';" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✕ Cancelar</button>' +
+    '</div></div>';
 
-  document.getElementById('edicaoConteudo').innerHTML = html;
+  document.getElementById(containerId).innerHTML = html;
+  document.getElementById(containerId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.coletarDadosFormulario = function() {
+  return {
+    nome: document.getElementById('edit_nome').value,
+    orgao: document.getElementById('edit_orgao').value,
+    finalidadePrincipal: document.getElementById('edit_finalidade_principal').value,
+    finalidades: document.getElementById('edit_finalidades').value,
+    enquadramento: document.getElementById('edit_enquadramento').value,
+    taxaMin: document.getElementById('edit_taxa_min').value,
+    taxaMax: document.getElementById('edit_taxa_max').value,
+    prazo: document.getElementById('edit_prazo').value,
+    carencia: document.getElementById('edit_carencia').value,
+    limiteMin: document.getElementById('edit_limite_min').value,
+    limiteMax: document.getElementById('edit_limite_max').value,
+    documentos: document.getElementById('edit_documentos').value,
+    requisitos: document.getElementById('edit_requisitos').value,
+    observacoes: document.getElementById('edit_observacoes').value,
+    status: document.getElementById('edit_status').value
+  };
 };
 
 window.salvarEdicaoLinha = function(idLinha) {
+  const f = window.coletarDadosFormulario();
+  if (!f.nome.trim()) {
+    window.notificar('<strong>✕ Atenção:</strong><br>O nome da linha é obrigatório.', 'erro');
+    return;
+  }
   const dados = {
-    'Nome Linha': document.getElementById('edit_nome').value,
-    'Órgão/Instituição': document.getElementById('edit_orgao').value,
-    'Taxa Mín (%)': parseFloat(document.getElementById('edit_taxa_min').value),
-    'Taxa Máx (%)': parseFloat(document.getElementById('edit_taxa_max').value),
-    'Prazo (meses)': parseInt(document.getElementById('edit_prazo').value),
-    'Carência (meses)': parseInt(document.getElementById('edit_carencia').value),
-    'Limite Máx (R$)': parseInt(document.getElementById('edit_limite_max').value),
-    'Requisitos': document.getElementById('edit_requisitos').value,
-    'Observações': document.getElementById('edit_observacoes').value,
-    'Status (Ativa/Inativa)': document.getElementById('edit_status').value
+    'Nome Linha': f.nome,
+    'Órgão/Instituição': f.orgao,
+    'Finalidade Principal': f.finalidadePrincipal,
+    'Finalidades (tags)': f.finalidades,
+    'Enquadramento (Renda Min/Max)': f.enquadramento,
+    'Taxa Mín (%)': f.taxaMin,
+    'Taxa Máx (%)': f.taxaMax,
+    'Prazo (meses)': f.prazo,
+    'Carência (meses)': f.carencia,
+    'Limite Min (R$)': f.limiteMin,
+    'Limite Máx (R$)': f.limiteMax,
+    'Documentos Necessários': f.documentos,
+    'Requisitos': f.requisitos,
+    'Observações': f.observacoes,
+    'Status (Ativa/Inativa)': f.status
   };
 
   google.script.run
     .withSuccessHandler(function() {
-      const msg = document.createElement('div');
-      msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10000;';
-      msg.innerHTML = '<strong>✓ Sucesso!</strong><br>Linha atualizada com sucesso.';
-      document.body.appendChild(msg);
-      setTimeout(function() { msg.remove(); }, 3000);
-
       document.getElementById('edicaoConteudo').innerHTML = '';
+      window.notificar('<strong>✓ Sucesso!</strong><br>Linha atualizada com sucesso.');
+      window.carregarLinhasAdministrativo();
     })
     .withFailureHandler(function(error) {
-      alert('Erro ao salvar: ' + error);
+      window.notificar('<strong>✕ Erro ao salvar:</strong><br>' + error, 'erro');
     })
     .atualizarLinha(idLinha, dados);
 };
 
-window.carregarDadosLinha = function() {
-  const selectElement = document.getElementById('linhaParaEditar');
-  const idLinha = selectElement.value;
-
-  if (!idLinha) {
-    document.getElementById('edicaoConteudo').innerHTML = '';
+window.salvarNovaLinha = function() {
+  const dados = window.coletarDadosFormulario();
+  if (!dados.nome.trim()) {
+    window.notificar('<strong>✕ Atenção:</strong><br>O nome da linha é obrigatório.', 'erro');
     return;
   }
 
-  const nomeLinhaElement = selectElement.options[selectElement.selectedIndex];
-  const nomeLinha = nomeLinhaElement ? nomeLinhaElement.text : 'Desconhecido';
-
-  const html = '<div style="margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 5px;">' +
-    '<h3 style="margin-bottom: 20px; color: #1f4788;">' + nomeLinha + '</h3>' +
-    '<p><strong>ID:</strong> ' + idLinha + '</p>' +
-    '<p style="color: #666; font-style: italic;">Clique em editar para modificar os dados...</p>' +
-    '<button onclick="window.editarLinha(' + "'" + idLinha + "'" + ')" style="margin-top: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer;">✏️ Editar</button>' +
-    '</div>';
-
-  document.getElementById('edicaoConteudo').innerHTML = html;
-};
-
-window.mostrarFormularioEdicao = function(linha) {
-  if (!linha || typeof linha !== 'object') {
-    document.getElementById('edicaoConteudo').innerHTML = '<p style="color: red;">Nenhuma linha selecionada</p>';
-    return;
-  }
-
-  let html = '<div style="margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 5px;">';
-  html += '<h3 style="margin-bottom: 20px; color: #1f4788;">' + (linha['Nome Linha'] || 'Sem nome') + '</h3>';
-  html += '<p><strong>Finalidade:</strong> ' + (linha['Finalidade Principal'] || 'N/A') + '</p>';
-  html += '<p><strong>Taxa:</strong> ' + (linha['Taxa Mín (%)'] || 'N/A') + '% - ' + (linha['Taxa Máx (%)'] || 'N/A') + '%</p>';
-  html += '<p><strong>Prazo:</strong> ' + (linha['Prazo (meses)'] || 'N/A') + ' meses</p>';
-  html += '<p><strong>Carência:</strong> ' + (linha['Carência (meses)'] || '0') + ' meses</p>';
-  html += '<p><strong>Limite:</strong> R$ ' + window.formatarMoeda(linha['Limite Min (R$)']) + ' a R$ ' + window.formatarMoeda(linha['Limite Máx (R$)']) + '</p>';
-  html += '<p><strong>Requisitos:</strong> ' + (linha['Requisitos'] || 'N/A') + '</p>';
-  html += '<p><strong>Status:</strong> ' + (linha['Status (Ativa/Inativa)'] || 'Ativa') + '</p>';
-  html += '</div>';
-  document.getElementById('edicaoConteudo').innerHTML = html;
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      document.getElementById('formNovaLinha').innerHTML = '';
+      if (resp && resp.sucesso) {
+        window.notificar('<strong>✓ Sucesso!</strong><br>Nova linha adicionada (' + resp.id + ').');
+      } else {
+        window.notificar('<strong>✓ Linha adicionada.</strong>');
+      }
+      window.carregarLinhasAdministrativo();
+    })
+    .withFailureHandler(function(error) {
+      window.notificar('<strong>✕ Erro ao adicionar:</strong><br>' + error, 'erro');
+    })
+    .adicionarLinha(dados);
 };
 
 window.carregarHistorico = function() {
