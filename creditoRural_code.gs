@@ -230,28 +230,75 @@ function buscarLinhas(parametros) {
   }
 }
 
+/**
+ * Converte texto monetário em número, interpretando "mil" (x1.000) e
+ * "mi"/"milhão"/"milhões" (x1.000.000). Ex: "R$ 500 mil" -> 500000;
+ * "R$ 3.5 mi" -> 3500000.
+ */
+function parseValorRenda(parte) {
+  try {
+    if (!parte) return null;
+    const t = String(parte).toLowerCase().trim();
+
+    const m = t.match(/([\d.,]+)/);
+    if (!m) return null;
+
+    let num = parseFloat(m[1].replace(/\s/g, "").replace(",", "."));
+    if (isNaN(num)) return null;
+
+    // Detecta a unidade. Verifica milhão antes de mil (pois "milhões"
+    // começa com "mil"). "mi" como palavra isolada também é milhão.
+    if (/milh|\bmi\b/.test(t)) {
+      num = num * 1000000;
+    } else if (/\bmil\b/.test(t)) {
+      num = num * 1000;
+    }
+    return num;
+  } catch (e) {
+    return null;
+  }
+}
+
 function validarRenda(renda, enquadramentoTexto) {
   try {
     if (!enquadramentoTexto || enquadramentoTexto === "") return true;
     if (typeof enquadramentoTexto !== "string") return true;
 
-    if (enquadramentoTexto.includes("Conforme análise")) return true;
+    const t = enquadramentoTexto.toLowerCase();
 
-    const partes = enquadramentoTexto.split("/");
-    if (partes.length < 2) return true;
+    // "Conforme análise": não há faixa fixa, não bloqueia
+    if (t.includes("conforme")) return true;
 
-    const minTexto = partes[0].trim();
-    const maxTexto = partes[1].trim();
+    // Formato faixa "min/max" (ex: "Sem limite/R$ 500 mil")
+    if (enquadramentoTexto.includes("/")) {
+      const partes = enquadramentoTexto.split("/");
+      const minTexto = partes[0].trim();
+      const maxTexto = partes[1].trim();
 
-    if (minTexto === "Sem limite") {
-      const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
+      const min = minTexto.toLowerCase().includes("sem limite")
+        ? 0 : (parseValorRenda(minTexto) || 0);
+      const max = maxTexto.toLowerCase().includes("sem limite")
+        ? Infinity : (parseValorRenda(maxTexto) || Infinity);
+
+      return renda >= min && renda <= max;
+    }
+
+    // Formato "Acima de X" (ex: "Acima de R$ 3.5 mi")
+    if (t.includes("acima")) {
+      const min = parseValorRenda(enquadramentoTexto);
+      if (min === null) return true;
+      return renda > min;
+    }
+
+    // Formato "Até X"
+    if (t.includes("até") || t.includes("ate")) {
+      const max = parseValorRenda(enquadramentoTexto);
+      if (max === null) return true;
       return renda <= max;
     }
 
-    const min = parseInt(minTexto.replace(/\D/g, "")) || 0;
-    const max = parseInt(maxTexto.replace(/\D/g, "")) || Infinity;
-
-    return renda >= min && renda <= max;
+    // Formato não reconhecido: não bloqueia
+    return true;
   } catch (e) {
     return true;
   }
