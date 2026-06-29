@@ -149,7 +149,20 @@ function inicializarSheetLinhas() {
     ["L055", "INVESTIMENTO RECURSOS LIVRES COM REGISTRO NO SICOR", "Cresol", "Investimento", "investimento", "Conforme análise", "9", "9", "120", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: IOF complementar | Prazo: Poupança até 10 anos", "Os créditos concedidos com recursos livres podem ter por objeto operações de custeio, de investimento, de comercialização ou de industrialização, envolvendo quaisquer produtos de origem vegetal ou animal, inclusive os obtidos em atividades extrativistas.; Taxas e Encargos:; Taxa de Juros Anual: Poupança: de 9% a 25% a.a.RP: de 12% a 45% a.a.; IOF Complementar: IOF complementar; Limites e Prazos:; Percentual de Financiamento: 100% dos itens financiáveis, conforme projeto/orçamento; Prazo Total: Poupança até 10 anos; Prazo de Carência: Até 12 meses; Condições de Amortização: periodicidade mensal ou anual; Modalidades e Códigos:; Modalidades Colmeia:; POUPANÇA LIVRE 20156; Recursos Próprios com Registro no Sicor 7062; Normas e Regulamentações:; Cresol Empresarial BNDES (BNDES Pequenas Empresas); Objetivo: Investimento; Taxa: BNDES: Spread do BNDES: 1,35% a.a. + Spread da Cresol: de 3% a.a a", ""]
   ];
 
-  linhas.forEach(linha => SHEET_LINHAS.appendRow(linha));
+  // Converte colunas numéricas (taxa/prazo/carência/limite) para NÚMERO,
+  // evitando que decimais com ponto (ex.: "3.5") sejam mal interpretados
+  // pela localidade da planilha (pt-BR usa vírgula).
+  const colsNum = [6, 7, 8, 9, 10, 11]; // taxa min, taxa max, prazo, carência, limite min, limite max
+  const linhasNorm = linhas.map(function (linha) {
+    const c = linha.slice();
+    colsNum.forEach(function (i) {
+      const v = parseFloat(String(c[i]).replace(",", "."));
+      c[i] = isNaN(v) ? 0 : v;
+    });
+    return c;
+  });
+
+  linhasNorm.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
   SHEET_LINHAS.setColumnWidths(1, 19, 80);
@@ -169,7 +182,8 @@ function inicializarSheetConfig() {
     ["Ano Fiscal", "2025/2026", "text", "Plano Safra atual"],
     ["Contato Suporte", "agro@cresol.com.br", "email", "E-mail para suporte"],
     ["Últimas Linhas Adicionadas", "Pronaf Irrigação", "text", "Informação das novas linhas"],
-    ["Link Consulta Crédito (SICOR/CACR)", "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr", "url", "Link para consulta de crédito já tomado (SICOR/CACR)"]
+    ["Link Consulta Crédito (SICOR/CACR)", "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr", "url", "Link para consulta de crédito já tomado (SICOR/CACR)"],
+    ["E-mails Administradores", "", "lista", "E-mails autorizados a acessar a aba Administrativo (separados por vírgula). Vazio = todos."]
   ];
 
   configs.forEach(config => SHEET_CONFIG.appendRow(config));
@@ -203,6 +217,13 @@ function buscarLinhas(parametros) {
           const enquadramentoIdx = headers.indexOf("Enquadramento (Renda Min/Max)");
           if (enquadramentoIdx === -1) return false;
 
+          // Regra de grupo: o associado só vê linhas do seu enquadramento
+          // (PRONAF só PRONAF; PRONAMP só PRONAMP; DEMAIS só DEMAIS).
+          if (parametros.enquadramento) {
+            const grupoLinha = _grupoEnquadramentoLinha(linha[headers.indexOf("Nome Linha")], linha[enquadramentoIdx]);
+            if (grupoLinha !== _grupoAssociado(parametros.enquadramento)) return false;
+          }
+
           if (!validarRenda(parametros.renda, linha[enquadramentoIdx])) return false;
 
           const finalidadesIdx = headers.indexOf("Finalidades (tags)");
@@ -220,6 +241,23 @@ function buscarLinhas(parametros) {
       })
       .map(linha => {
         try {
+          const culturasTxt = linha[headers.indexOf("Culturas Financiadas")] || "";
+          let limiteMax = parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0;
+          let limiteMin = parseInt(linha[headers.indexOf("Limite Min (R$)")]) || 0;
+
+          // Limite específico por cultura (ex.: "MILHO (até 25 mil)")
+          let capCulturaValor = 0, capCulturaTipo = "";
+          const cap = _capCultura(parametros.produto, culturasTxt);
+          if (cap) {
+            if (cap.tipo === "max") {
+              if (limiteMax === 0 || cap.valor < limiteMax) limiteMax = cap.valor;
+              capCulturaValor = cap.valor; capCulturaTipo = "max";
+            } else if (cap.tipo === "min") {
+              if (cap.valor > limiteMin) limiteMin = cap.valor;
+              capCulturaValor = cap.valor; capCulturaTipo = "min";
+            }
+          }
+
           return {
             id: linha[headers.indexOf("ID")] || "",
             nome: linha[headers.indexOf("Nome Linha")] || "Sem nome",
@@ -229,15 +267,17 @@ function buscarLinhas(parametros) {
             taxaMax: parseFloat(linha[headers.indexOf("Taxa Máx (%)")]) || 0,
             prazo: parseInt(linha[headers.indexOf("Prazo (meses)")]) || 0,
             carencia: parseInt(linha[headers.indexOf("Carência (meses)")]) || 0,
-            limiteMin: parseInt(linha[headers.indexOf("Limite Min (R$)")]) || 0,
-            limiteMax: parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0,
+            limiteMin: limiteMin,
+            limiteMax: limiteMax,
             requisitos: linha[headers.indexOf("Requisitos")] || "",
             documentos: linha[headers.indexOf("Documentos Necessários")] || "",
             observacoes: linha[headers.indexOf("Observações")] || "",
             itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || "",
-            culturas: linha[headers.indexOf("Culturas Financiadas")] || "",
-            limiteDisponivel: Math.max(0, (parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0) - (parametros.valorTomado || 0)),
-            valorTomado: parametros.valorTomado || 0
+            culturas: culturasTxt,
+            limiteDisponivel: Math.max(0, limiteMax - (parametros.valorTomado || 0)),
+            valorTomado: parametros.valorTomado || 0,
+            capCulturaValor: capCulturaValor,
+            capCulturaTipo: capCulturaTipo
           };
         } catch (e) {
           return null;
@@ -372,6 +412,70 @@ function validarProduto(produtoBuscado, linha, headers) {
   } catch (e) {
     return true;
   }
+}
+
+function _normalizarTexto(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Converte texto de valor ("25 mil", "25.000", "1,5 mi") em número.
+ */
+function _parseValorTexto(s) {
+  const t = String(s || "").toLowerCase();
+  const m = t.match(/([\d.,]+)/);
+  if (!m) return null;
+  let n = parseFloat(m[1].replace(/\./g, "").replace(",", "."));
+  if (isNaN(n)) return null;
+  if (/milh|\bmi\b/.test(t)) n *= 1000000;
+  else if (/\bmil\b/.test(t)) n *= 1000;
+  return n;
+}
+
+/**
+ * Procura, no texto de culturas, um limite específico para a cultura buscada,
+ * no formato "<cultura> (até X)" (máximo) ou "<cultura> (acima de X)" (mínimo).
+ * Ex.: "MILHO (até 25 mil)" -> { tipo: 'max', valor: 25000 }.
+ */
+function _capCultura(produtoBuscado, culturasTexto) {
+  try {
+    if (!produtoBuscado || !culturasTexto) return null;
+    const termo = _normalizarTexto(produtoBuscado.trim());
+    if (termo.length < 3) return null;
+    const texto = _normalizarTexto(culturasTexto);
+    const termoEsc = termo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    let m = texto.match(new RegExp(termoEsc + "[^,;()]*\\(\\s*ate\\s*([^)]+)\\)"));
+    if (m) { const v = _parseValorTexto(m[1]); if (v) return { tipo: "max", valor: v }; }
+
+    m = texto.match(new RegExp(termoEsc + "[^,;()]*\\(\\s*acima\\s*de\\s*([^)]+)\\)"));
+    if (m) { const v = _parseValorTexto(m[1]); if (v) return { tipo: "min", valor: v }; }
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Classifica a linha em um grupo de enquadramento: 'pronaf', 'pronamp' ou
+ * 'demais'. Usa o nome (PRONAF/PRONAMP) e, em seguida, a faixa de renda.
+ */
+function _grupoEnquadramentoLinha(nome, enqTexto) {
+  const n = String(nome || "").toUpperCase();
+  if (n.indexOf("PRONAF") !== -1) return "pronaf";
+  if (n.indexOf("PRONAMP") !== -1) return "pronamp";
+  const e = String(enqTexto || "").toLowerCase();
+  if (e.indexOf("sem limite") !== -1) return "pronaf";
+  if (e.indexOf("500 mil") !== -1 && (e.indexOf("3.5") !== -1 || e.indexOf("3,5") !== -1)) return "pronamp";
+  return "demais";
+}
+
+/** Converte o enquadramento do associado (form) no grupo da linha. */
+function _grupoAssociado(enquadramento) {
+  if (enquadramento === "pronaf") return "pronaf";
+  if (enquadramento === "pronamp") return "pronamp";
+  return "demais"; // empresarial / demais
 }
 
 function validarFinalidade(finalidadeBuscada, finalidadeLinha) {
@@ -600,6 +704,55 @@ function adicionarLinha(dados) {
 
 // Parâmetro de configuração que guarda o link de consulta (SICOR/CACR)
 const PARAM_LINK_CONSULTA = "Link Consulta Crédito (SICOR/CACR)";
+const PARAM_EMAILS_ADMIN = "E-mails Administradores";
+
+// ---- Controle de acesso à área Administrativa (login corporativo) ----
+
+function obterEmailsAdmin() {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_EMAILS_ADMIN) {
+        return String(dados[i][1] || "")
+          .split(/[;,\n]+/)
+          .map(function (e) { return e.trim().toLowerCase(); })
+          .filter(function (e) { return e; });
+      }
+    }
+    return [];
+  } catch (e) { return []; }
+}
+
+function salvarEmailsAdmin(texto) {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_EMAILS_ADMIN) {
+        SHEET_CONFIG.getRange(i + 1, 2).setValue(texto);
+        return { sucesso: true };
+      }
+    }
+    SHEET_CONFIG.appendRow([PARAM_EMAILS_ADMIN, texto, "lista", "E-mails autorizados a acessar a aba Administrativo (separados por vírgula)"]);
+    return { sucesso: true };
+  } catch (e) { return { sucesso: false, erro: e.toString() }; }
+}
+
+function usuarioAtualEmail() {
+  try { return (Session.getActiveUser().getEmail() || "").toLowerCase(); }
+  catch (e) { return ""; }
+}
+
+/**
+ * Indica se o usuário logado pode acessar a área Administrativa.
+ * Se a lista de e-mails ainda não foi configurada, libera (para permitir a
+ * configuração inicial). Configurada, só os e-mails da lista têm acesso.
+ */
+function usuarioEhAdmin() {
+  const lista = obterEmailsAdmin();
+  if (lista.length === 0) return true;
+  const email = usuarioAtualEmail();
+  return !!email && lista.indexOf(email) !== -1;
+}
 
 /**
  * Retorna o link de consulta cadastrado na aba Configurações.
@@ -852,13 +1005,17 @@ function _cresolEhRural(nome) {
 }
 
 function _cresolNumTaxa(t) {
-  if (!t) return "0";
+  // Retorna NÚMERO (não texto) para evitar erro de interpretação de
+  // decimal por locale (ex.: "3.5" em planilha pt-BR).
+  if (!t) return 0;
   const m = String(t).match(/(\d+(?:[.,]\d+)?)/);
-  return m ? m[1].replace(",", ".") : "0";
+  if (!m) return 0;
+  const n = parseFloat(m[1].replace(",", "."));
+  return isNaN(n) ? 0 : n;
 }
 
 function _cresolNumLimite(t) {
-  if (!t) return "0";
+  if (!t) return 0;
   const re = /R\$\s*([\d.]+(?:,\d+)?)/g;
   let m, max = 0, achou = false;
   while ((m = re.exec(t))) {
@@ -866,17 +1023,17 @@ function _cresolNumLimite(t) {
     const n = parseInt(parseFloat(v), 10);
     if (!isNaN(n)) { achou = true; if (n > max) max = n; }
   }
-  return achou ? String(max) : "0";
+  return achou ? max : 0;
 }
 
 function _cresolPrazoMeses(t) {
-  if (!t) return "0";
+  if (!t) return 0;
   let meses = 0, m;
   const reAnos = /(\d+)\s*anos?/g;
   while ((m = reAnos.exec(t))) { const v = parseInt(m[1], 10) * 12; if (v > meses) meses = v; }
   const reMes = /(\d+)\s*mes/g;
   while ((m = reMes.exec(t))) { const v = parseInt(m[1], 10); if (v > meses) meses = v; }
-  return String(meses);
+  return meses;
 }
 
 function _cresolEnquadramento(pub, nome) {
@@ -942,8 +1099,8 @@ function _cresolMapear(rec, idNum) {
     _cresolTags(rec.nome, rec.tipo, rec.objetivo),
     _cresolEnquadramento(rec.publico, rec.nome),
     taxa, taxa,
-    _cresolPrazoMeses(rec.prazo), "0",
-    "0", _cresolNumLimite(rec.limite),
+    _cresolPrazoMeses(rec.prazo), 0,
+    0, _cresolNumLimite(rec.limite),
     (rec.requisitos.join("; ")).substring(0, 600) || "Conforme política de crédito da Cresol",
     _cresolDocumentos(rec.publico),
     status, new Date(), _cresolObs(rec),
@@ -1073,13 +1230,22 @@ function _numBR(v) {
 }
 
 /**
+ * Chave de comparação de documento/conta: só dígitos, sem zeros à esquerda.
+ * Resolve o caso da base que perde zeros iniciais de CPF (ex.: digitar
+ * "01234567890" encontra o registro "1234567890").
+ */
+function _chaveDoc(v) {
+  return String(v || "").replace(/\D/g, "").replace(/^0+/, "");
+}
+
+/**
  * Busca um associado na aba Base por conta ou CPF/CNPJ (somente dígitos).
  * vl_anual_fonte_renda_total é a renda MENSAL (apesar do nome) -> anualiza.
  */
 function buscarAssociado(termo) {
   try {
     if (!termo) return { sucesso: false, erro: "Informe a conta ou o CPF/CNPJ." };
-    const alvo = String(termo).replace(/\D/g, "");
+    const alvo = _chaveDoc(termo);
     if (!alvo) return { sucesso: false, erro: "Informe um número válido." };
 
     const dados = SHEET_BASE.getDataRange().getValues();
@@ -1094,8 +1260,8 @@ function buscarAssociado(termo) {
     const iTipo = H.indexOf("ds_pessoa_tipo");
 
     for (let r = 1; r < dados.length; r++) {
-      const cpf = iCpf !== -1 ? String(dados[r][iCpf] || "").replace(/\D/g, "") : "";
-      const conta = iConta !== -1 ? String(dados[r][iConta] || "").replace(/\D/g, "") : "";
+      const cpf = iCpf !== -1 ? _chaveDoc(dados[r][iCpf]) : "";
+      const conta = iConta !== -1 ? _chaveDoc(dados[r][iConta]) : "";
       if ((cpf && cpf === alvo) || (conta && conta === alvo)) {
         const rendaMensal = iRenda !== -1 ? _numBR(dados[r][iRenda]) : 0;
         return {
@@ -1225,21 +1391,22 @@ function processarArquivoCreditoBase(form) {
 function buscarCreditoTomado(cpfCnpj) {
   try {
     if (!cpfCnpj) return { sucesso: false, itens: [] };
-    const alvo = String(cpfCnpj).replace(/\D/g, "");
+    const alvo = _chaveDoc(cpfCnpj);
+    if (!alvo) return { sucesso: false, itens: [] };
     const dados = SHEET_BASE_CREDITO.getDataRange().getValues();
     if (!dados || dados.length < 2) return { sucesso: false, erro: "Base de crédito tomado vazia.", itens: [] };
 
     const itens = [];
     let totalTomado = 0, limiteMax = 0;
     for (let r = 1; r < dados.length; r++) {
-      const cpf = String(dados[r][0] || "").replace(/\D/g, "");
+      const cpf = _chaveDoc(dados[r][0]);
       if (cpf && cpf === alvo) {
         const vf = _numBR(dados[r][4]);            // valor financiado (bruto)
         const lim = _numBR(dados[r][6]);           // limite custeio disponível
-        const aliqPct = _numBR(dados[r][5]);       // alíquota ProAgro (% a descontar)
-        // ProAgro só existe em custeio agrícola: quando há alíquota, o valor
-        // já tomado é o financiado descontado o percentual da alíquota.
-        const fator = aliqPct > 0 ? (1 - aliqPct / 100) : 1;
+        const aliqPct = _numBR(dados[r][5]);       // alíquota ProAgro (% a somar)
+        // ProAgro só existe em custeio agrícola: quando há alíquota, ela é
+        // somada ao valor financiado para compor o valor já tomado.
+        const fator = aliqPct > 0 ? (1 + aliqPct / 100) : 1;
         const vfTomado = vf * fator;
         totalTomado += vfTomado;
         if (lim > limiteMax) limiteMax = lim;
@@ -1269,12 +1436,13 @@ function doGet() {
 function obterHTML() {
   const dataAtualizacao = new Date().toLocaleDateString('pt-BR');
   const linkConsulta = obterLinkConsulta();
+  const ehAdmin = usuarioEhAdmin();
   return HtmlService.createHtmlOutput(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema de Crédito Rural - CRESOL</title>
+<title>Sistema de Consulta de Crédito Rural - CRESOL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1334,7 +1502,7 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <body>
 <div class="container">
 <div class="header">
-<h1>🌾 Sistema de Crédito Rural</h1>
+<h1>🌾 Sistema de Consulta de Crédito Rural</h1>
 <p>Consultar linhas de crédito para operações rurais - CRESOL</p>
 <span class="header-badge">Plano Safra 2025/2026</span>
 <span class="header-update">Última atualização: ${dataAtualizacao}</span>
@@ -1343,7 +1511,6 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <div class="tabs">
 <button class="tab-btn active" id="btn-consulta" onclick="window.mudarAba(event, 'consulta')">Consultar</button>
 <button class="tab-btn" id="btn-admin" onclick="window.mudarAba(event, 'admin')">Administrativo</button>
-<button class="tab-btn" id="btn-historico" onclick="window.mudarAba(event, 'historico')">Histórico</button>
 </div>
 
 <div id="consulta" class="tab-content active">
@@ -1367,14 +1534,8 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <input type="text" id="nomeAssociado" readonly style="background-color: #f0f0f0;" placeholder="Preenchido automaticamente pela busca">
 </div>
 <button type="button" onclick="window.buscarAssociado('manual')" style="background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">🔍 Buscar Associado</button>
+<button type="button" onclick="window.limparConsulta()" style="background: none; color: #6c757d; border: 1px solid #6c757d; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-left: 8px;">🧹 Limpar</button>
 <div id="assocStatus" style="margin-top: 8px;"></div>
-</div>
-<div class="form-group">
-<label>📦 Produto/Finalidade <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional - refina a busca)</span></label>
-<input type="text" id="produto" placeholder="Ex: trator, café, silo, irrigação...">
-<small style="color: #666; display: block; margin-top: 5px;">
-Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deixe em branco para ver todas as linhas do tipo selecionado.
-</small>
 </div>
 <div class="grid-2">
 <div class="form-group">
@@ -1395,6 +1556,12 @@ Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deix
 Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricultura Empresarial
 </small>
 </div>
+<div class="grid-2">
+<div class="form-group">
+<label>📦 Produto/Finalidade <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional)</span></label>
+<input type="text" id="produto" placeholder="Ex: milho, trator, café, silo...">
+<small style="color: #666; display: block; margin-top: 5px;">Palavra-chave para filtrar. Em branco = todas do tipo selecionado.</small>
+</div>
 <div class="form-group">
 <label>🎯 Tipo de Operação</label>
 <select id="finalidade" onchange="window.atualizarProdutosDisponiveis()">
@@ -1410,6 +1577,7 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <option value="sustentabilidade">Sustentabilidade/Carbono</option>
 <option value="cafe">Específico para Café</option>
 </select>
+</div>
 </div>
 <div id="produtosDisponiveis" style="display: none; background: #e6f2ee; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #005c46; font-size: 13px;">
 <strong style="color: #004736;">💡 Produtos financiáveis:</strong>
@@ -1428,6 +1596,13 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <div id="admin" class="tab-content">
 <div class="alert alert-info">
 <strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito - editar, incluir e ativar/inativar.
+</div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">🔐 E-mails com acesso à área Administrativa</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Separe por vírgula. Somente estes e-mails (login corporativo) verão esta aba. Se ficar vazio, todos têm acesso.</small>
+<input type="text" id="emailsAdminInput" placeholder="fulano@cresol.com.br, ciclano@cresol.com.br" style="margin-bottom: 10px;">
+<button type="button" onclick="window.salvarEmailsAdmin()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Acessos</button>
+<div id="emailsAdminStatus" style="margin-top: 8px;"></div>
 </div>
 <div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
 <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">🔗 Link de Consulta de Crédito Tomado (SICOR/CACR)</label>
@@ -1471,17 +1646,21 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <div id="edicaoConteudo"></div>
 <div id="listaLinhasAdmin"></div>
 </div>
-
-<div id="historico" class="tab-content">
-<div class="alert alert-info">
-<strong>📊 Histórico de Consultas:</strong> Acompanhe todas as buscas realizadas.
-</div>
-<div id="tabelaHistorico"></div>
-</div>
 </div>
 
 <script>
 window.LINK_CONSULTA = '${linkConsulta}';
+window.EH_ADMIN = ${ehAdmin};
+
+// Controle de acesso: oculta a aba Administrativo para não autorizados
+(function() {
+  if (!window.EH_ADMIN) {
+    const btn = document.getElementById('btn-admin');
+    if (btn) btn.style.display = 'none';
+    const admin = document.getElementById('admin');
+    if (admin) admin.parentNode.removeChild(admin);
+  }
+})();
 
 window.abrirConsultaSicor = function() {
   if (window.LINK_CONSULTA && window.LINK_CONSULTA.trim() !== '') {
@@ -1498,12 +1677,35 @@ window.mudarAba = function(event, abaId) {
   event.target.classList.add('active');
 
   if (abaId === 'admin') {
+    if (!window.EH_ADMIN) return;
     window.carregarLinhasAdministrativo();
     window.carregarLinkConsulta();
     window.carregarConfigBase();
-  } else if (abaId === 'historico') {
-    window.carregarHistorico();
+    window.carregarEmailsAdmin();
   }
+};
+
+window.carregarEmailsAdmin = function() {
+  google.script.run
+    .withSuccessHandler(function(lista) {
+      const input = document.getElementById('emailsAdminInput');
+      if (input) input.value = (lista || []).join(', ');
+    })
+    .withFailureHandler(function(e) { console.error(e); })
+    .obterEmailsAdmin();
+};
+
+window.salvarEmailsAdmin = function() {
+  const texto = document.getElementById('emailsAdminInput').value.trim();
+  const st = document.getElementById('emailsAdminStatus');
+  google.script.run
+    .withSuccessHandler(function() {
+      st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ Acessos salvos. Vale para os próximos acessos ao sistema.</span>';
+    })
+    .withFailureHandler(function(error) {
+      st.innerHTML = '<span style="color:red; font-size:12px;">✕ ' + error + '</span>';
+    })
+    .salvarEmailsAdmin(texto);
 };
 
 window.carregarConfigBase = function() {
@@ -1803,6 +2005,23 @@ window.atualizarProdutosDisponiveis = function() {
   produtosDiv.style.display = 'block';
 };
 
+window.limparConsulta = function() {
+  ['conta', 'cpfcnpj', 'nomeAssociado', 'produto', 'renda', 'valorTomado'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const enq = document.getElementById('enquadramento');
+  if (enq) { enq.value = ''; enq.dataset.value = ''; }
+  const fin = document.getElementById('finalidade');
+  if (fin) fin.value = '';
+  const assoc = document.getElementById('assocStatus'); if (assoc) assoc.innerHTML = '';
+  const credito = document.getElementById('creditoTomadoBox'); if (credito) credito.innerHTML = '';
+  const prod = document.getElementById('produtosDisponiveis'); if (prod) prod.style.display = 'none';
+  const res = document.getElementById('resultado'); if (res) res.classList.remove('visible');
+  const resConteudo = document.getElementById('resultadoConteudo'); if (resConteudo) resConteudo.innerHTML = '';
+  document.getElementById('conta').focus();
+};
+
 window.buscarAssociado = function(origem) {
   const conta = document.getElementById('conta').value.trim();
   const cpf = document.getElementById('cpfcnpj').value.trim();
@@ -1877,7 +2096,7 @@ window.carregarCreditoTomado = function(cpf) {
           '<tbody>' + linhas + '</tbody></table></div>' +
           '<p style="margin-top:8px; font-size:13px;"><strong>Total já tomado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
           ' &nbsp;|&nbsp; <strong>Limite custeio disponível:</strong> R$ ' + window.formatarMoeda(resp.limiteDisponivel) + '</p>' +
-          '<small style="color:#666;">Valor já tomado = valor financiado menos a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
+          '<small style="color:#666;">Valor já tomado = valor financiado mais a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
       } else {
         box.innerHTML = '<p style="color:#888; font-size:12px;">Sem registros de crédito tomado para este CPF/CNPJ na base.</p>';
       }
@@ -1942,6 +2161,12 @@ window.mostrarResultados = function(linhas) {
       html += '<div class="info-item"><span class="info-label">Requisitos:</span><span class="info-value">' + linha.requisitos + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Documentos:</span><span class="info-value">' + linha.documentos + '</span></div>';
       html += '</div>';
+      if (linha.capCulturaValor > 0) {
+        const txt = (linha.capCulturaTipo === 'min')
+          ? 'Para a cultura informada, esta linha financia <strong>acima de R$ ' + window.formatarMoeda(linha.capCulturaValor) + '</strong>.'
+          : 'Para a cultura informada, o limite máximo desta linha é <strong>R$ ' + window.formatarMoeda(linha.capCulturaValor) + '</strong>.';
+        html += '<div style="margin-top: 8px; background: #fff8ee; border-left: 4px solid #f58220; padding: 10px 12px; border-radius: 4px; font-size: 13px; color: #b3590f;">⚠️ ' + txt + '</div>';
+      }
       if (linha.itensFinanciaveis) {
         html += '<div class="itens-financiaveis" style="margin-top: 12px; background: #eef6ee; border-left: 4px solid #28a745; padding: 10px 12px; border-radius: 4px;">' +
           '<span style="font-weight: 600; color: #1f6b1f; font-size: 13px;">✅ O que pode ser financiado:</span>' +
@@ -2324,18 +2549,24 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
 };
 
 window.coletarDadosFormulario = function() {
+  // Converte campos numéricos para número (aceitando vírgula ou ponto),
+  // para não gravar texto que a planilha pt-BR interprete errado.
+  const num = function(id) {
+    const v = parseFloat(String(document.getElementById(id).value).replace(',', '.'));
+    return isNaN(v) ? 0 : v;
+  };
   return {
     nome: document.getElementById('edit_nome').value,
     orgao: document.getElementById('edit_orgao').value,
     finalidadePrincipal: document.getElementById('edit_finalidade_principal').value,
     finalidades: document.getElementById('edit_finalidades').value,
     enquadramento: document.getElementById('edit_enquadramento').value,
-    taxaMin: document.getElementById('edit_taxa_min').value,
-    taxaMax: document.getElementById('edit_taxa_max').value,
-    prazo: document.getElementById('edit_prazo').value,
-    carencia: document.getElementById('edit_carencia').value,
-    limiteMin: document.getElementById('edit_limite_min').value,
-    limiteMax: document.getElementById('edit_limite_max').value,
+    taxaMin: num('edit_taxa_min'),
+    taxaMax: num('edit_taxa_max'),
+    prazo: num('edit_prazo'),
+    carencia: num('edit_carencia'),
+    limiteMin: num('edit_limite_min'),
+    limiteMax: num('edit_limite_max'),
     documentos: document.getElementById('edit_documentos').value,
     requisitos: document.getElementById('edit_requisitos').value,
     observacoes: document.getElementById('edit_observacoes').value,
@@ -2404,40 +2635,6 @@ window.salvarNovaLinha = function() {
       window.notificar('<strong>✕ Erro ao adicionar:</strong><br>' + error, 'erro');
     })
     .adicionarLinha(dados);
-};
-
-window.carregarHistorico = function() {
-  google.script.run
-    .withSuccessHandler(function(historico) {
-      let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">' +
-        '<thead style="background: #f5f5f5;">' +
-        '<tr><th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Data</th>' +
-        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Tipo</th>' +
-        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Finalidade</th>' +
-        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Resultado</th></tr>' +
-        '</thead><tbody>';
-
-      if (!historico || !Array.isArray(historico) || historico.length === 0) {
-        html += '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #999;">Nenhuma consulta registrada ainda</td></tr>';
-      } else {
-        historico.forEach(item => {
-          html += '<tr style="border-bottom: 1px solid #eee;">' +
-            '<td style="padding: 10px;">' + (item[0] || '-') + '</td>' +
-            '<td style="padding: 10px;">' + (item[1] || '-') + '</td>' +
-            '<td style="padding: 10px;">' + (item[2] || '-') + '</td>' +
-            '<td style="padding: 10px;">' + (item[4] || '-') + '</td>' +
-            '</tr>';
-        });
-      }
-
-      html += '</tbody></table>';
-      document.getElementById('tabelaHistorico').innerHTML = html;
-    })
-    .withFailureHandler(function(error) {
-      console.error('Erro ao carregar histórico:', error);
-      document.getElementById('tabelaHistorico').innerHTML = '<p style="color: red;">Erro ao carregar histórico: ' + error + '</p>';
-    })
-    .obterHistorico();
 };
 
 window.formatarMoeda = function(valor) {
