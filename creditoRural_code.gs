@@ -2078,9 +2078,25 @@ window.carregarCreditoTomado = function(cpf) {
             '<td style="padding:4px 8px; text-align:center;">' + window.escaparHtml(String(it.anoSafra)) + '</td>' +
             '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.valorFinanciado) + '</td>' +
             '<td style="padding:4px 8px; text-align:center;">' + (aliq ? window.escaparHtml(aliq) : '—') + '</td>' +
-            '<td style="padding:4px 8px; text-align:right;"><strong>R$ ' + window.formatarMoeda(it.valorTomado) + '</strong></td>' +
-            '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.limiteDisponivel) + '</td></tr>';
+            '<td style="padding:4px 8px; text-align:right;"><strong>R$ ' + window.formatarMoeda(it.valorTomado) + '</strong></td></tr>';
         });
+
+        // Limite por enquadramento - já tomado = limite custeio disponível
+        const enq = document.getElementById('enquadramento').dataset.value || '';
+        let limiteEnq = null;
+        if (enq === 'pronaf') limiteEnq = 250000;
+        else if (enq === 'pronamp') limiteEnq = 1500000;
+        let limiteTxt;
+        if (!enq) {
+          limiteTxt = '<em>informe a renda/enquadramento para calcular</em>';
+        } else if (limiteEnq === null) {
+          limiteTxt = '<strong>Sem limite máximo</strong> (enquadramento DEMAIS)';
+        } else {
+          const disp = Math.max(0, limiteEnq - resp.totalFinanciado);
+          limiteTxt = '<strong>R$ ' + window.formatarMoeda(disp) + '</strong> ' +
+            '<span style="color:#666;">(limite R$ ' + window.formatarMoeda(limiteEnq) + ' − já tomado R$ ' + window.formatarMoeda(resp.totalFinanciado) + ')</span>';
+        }
+
         box.innerHTML =
           '<div style="background:#fff8ee; border:1px solid #f3c98b; border-left:4px solid #f58220; padding:12px; border-radius:6px;">' +
           '<strong style="color:#b3590f;">💳 Crédito já tomado (base importada)</strong>' +
@@ -2091,11 +2107,10 @@ window.carregarCreditoTomado = function(cpf) {
           '<th style="padding:4px 8px;">Safra</th>' +
           '<th style="padding:4px 8px;">Valor financiado</th>' +
           '<th style="padding:4px 8px;">Alíq. ProAgro</th>' +
-          '<th style="padding:4px 8px;">Valor já tomado</th>' +
-          '<th style="padding:4px 8px;">Limite custeio disp.</th></tr></thead>' +
+          '<th style="padding:4px 8px;">Valor já tomado</th></tr></thead>' +
           '<tbody>' + linhas + '</tbody></table></div>' +
           '<p style="margin-top:8px; font-size:13px;"><strong>Total já tomado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
-          ' &nbsp;|&nbsp; <strong>Limite custeio disponível:</strong> R$ ' + window.formatarMoeda(resp.limiteDisponivel) + '</p>' +
+          ' &nbsp;|&nbsp; <strong>Limite Custeio Disponível:</strong> ' + limiteTxt + '</p>' +
           '<small style="color:#666;">Valor já tomado = valor financiado mais a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
       } else {
         box.innerHTML = '<p style="color:#888; font-size:12px;">Sem registros de crédito tomado para este CPF/CNPJ na base.</p>';
