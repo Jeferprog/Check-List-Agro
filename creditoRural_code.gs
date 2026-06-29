@@ -674,30 +674,30 @@ function processarArquivoCresol(form) {
       return { sucesso: false, erro: "Nenhuma linha encontrada no arquivo (formato inesperado)." };
     }
 
+    // Processa TODAS as linhas (rurais e não-rurais). A escolha de quais
+    // incluir é feita pelo gestor na tela de confirmação.
     const rows = [];
-    const excluidas = [];
+    const itens = [];
     let idNum = 0;
     for (let k = 0; k < blocos.length; k++) {
       const rec = _cresolParseBloco(blocos[k]);
       if (!rec.nome) continue;
-      if (!_cresolEhRural(rec.nome)) { excluidas.push(rec.nome); continue; }
       idNum++;
       rows.push(_cresolMapear(rec, idNum));
+      itens.push({ idx: rows.length - 1, nome: rec.nome, rural: _cresolEhRural(rec.nome) });
     }
-    if (rows.length === 0) return { sucesso: false, erro: "Nenhuma linha rural válida encontrada no arquivo." };
+    if (rows.length === 0) return { sucesso: false, erro: "Nenhuma linha encontrada no arquivo." };
 
     // Grava em uma aba temporária (staging) - NÃO altera a base ainda.
-    // A aplicação só ocorre após o gestor confirmar.
     const staging = _cresolStagingSheet(true);
     _cresolEscreverEmSheet(staging, rows);
 
-    const nomes = rows.map(function (r) { return r[1]; });
     return {
       sucesso: true,
-      total: blocos.length,
-      incluidas: rows.length,
-      nomesIncluidas: nomes,
-      excluidas: excluidas
+      total: rows.length,
+      qtdRural: itens.filter(function (i) { return i.rural; }).length,
+      qtdNaoRural: itens.filter(function (i) { return !i.rural; }).length,
+      itens: itens
     };
   } catch (e) {
     Logger.log("Erro em processarArquivoCresol: " + e.toString());
@@ -709,12 +709,26 @@ function processarArquivoCresol(form) {
  * Aplica a atualização pendente (staging) na aba Linhas, criando antes um
  * backup da base atual. Mantém apenas o backup mais recente.
  */
-function aplicarAtualizacaoCresol() {
+function aplicarAtualizacaoCresol(selecionados) {
   try {
     const staging = SS.getSheetByName("Linhas_Staging");
     if (!staging) return { sucesso: false, erro: "Nenhuma atualização pendente. Faça o upload do arquivo primeiro." };
     const vals = staging.getDataRange().getValues();
     if (!vals || vals.length <= 1) return { sucesso: false, erro: "A pré-visualização está vazia. Refaça o upload." };
+
+    if (!selecionados || !selecionados.length) {
+      return { sucesso: false, erro: "Selecione ao menos uma linha para incluir." };
+    }
+
+    const headers = vals[0];
+    const dados = vals.slice(1);
+    // Filtra pelos índices escolhidos e re-sequencia os IDs (L001, L002, ...)
+    const escolhidas = [];
+    selecionados.forEach(function (i) {
+      if (i >= 0 && i < dados.length) escolhidas.push(dados[i].slice());
+    });
+    if (escolhidas.length === 0) return { sucesso: false, erro: "Seleção inválida." };
+    escolhidas.forEach(function (r, i) { r[0] = "L" + ("000" + (i + 1)).slice(-3); });
 
     // Backup: remove backups antigos e copia a base atual
     const sheets = SS.getSheets();
@@ -725,14 +739,15 @@ function aplicarAtualizacaoCresol() {
     const backup = SHEET_LINHAS.copyTo(SS);
     backup.setName("Linhas_Backup " + carimbo);
 
-    // Aplica os dados do staging na aba Linhas
+    // Aplica na aba Linhas: cabeçalho + linhas escolhidas
     SHEET_LINHAS.clear();
-    SHEET_LINHAS.getRange(1, 1, vals.length, vals[0].length).setValues(vals);
-    SHEET_LINHAS.getRange(1, 1, 1, vals[0].length).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
-    SHEET_LINHAS.setColumnWidths(1, vals[0].length, 80);
+    SHEET_LINHAS.getRange(1, 1, 1, headers.length).setValues([headers]);
+    SHEET_LINHAS.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
+    SHEET_LINHAS.getRange(2, 1, escolhidas.length, headers.length).setValues(escolhidas);
+    SHEET_LINHAS.setColumnWidths(1, headers.length, 80);
 
     SS.deleteSheet(staging);
-    return { sucesso: true, linhas: vals.length - 1, backup: backup.getName() };
+    return { sucesso: true, linhas: escolhidas.length, backup: backup.getName() };
   } catch (e) {
     Logger.log("Erro em aplicarAtualizacaoCresol: " + e.toString());
     return { sucesso: false, erro: e.toString() };
@@ -1208,41 +1223,65 @@ window.enviarArquivoCresol = function() {
 
 window.mostrarPreviaAtualizacao = function(resp) {
   const status = document.getElementById('uploadStatus');
-  let lista = '';
-  (resp.nomesIncluidas || []).forEach(function(n) {
-    lista += '<li style="margin-bottom:2px;">' + window.escaparHtml(n) + '</li>';
-  });
-  let exc = '';
-  if (resp.excluidas && resp.excluidas.length) {
-    exc = '<details style="margin-top:8px;"><summary style="cursor:pointer; color:#666;">Ignoradas (não-rurais): ' + resp.excluidas.length + '</summary>' +
-      '<ul style="margin:6px 0 0 18px; color:#888; font-size:12px;">' +
-      resp.excluidas.map(function(n){ return '<li>' + window.escaparHtml(n) + '</li>'; }).join('') +
-      '</ul></details>';
+  const itens = resp.itens || [];
+  const rurais = itens.filter(function(i){ return i.rural; });
+  const naoRurais = itens.filter(function(i){ return !i.rural; });
+
+  function item(it, checked) {
+    return '<label style="display:block; font-size:13px; margin:3px 0; cursor:pointer;">' +
+      '<input type="checkbox" class="cresol-sel" value="' + it.idx + '"' + (checked ? ' checked' : '') +
+      ' style="width:auto; margin-right:7px; vertical-align:middle;">' +
+      window.escaparHtml(it.nome) + '</label>';
   }
 
-  status.innerHTML =
+  const htmlRural = rurais.map(function(it){ return item(it, true); }).join('');
+  const htmlNao = naoRurais.map(function(it){ return item(it, false); }).join('');
+
+  let bloco =
     '<div style="margin-top:12px; background:#fff8ee; border:1px solid #f3c98b; border-left:4px solid #f58220; padding:14px; border-radius:6px;">' +
-    '<strong style="color:#b3590f;">⚠️ Confira antes de aplicar</strong>' +
-    '<p style="margin:8px 0; font-size:13px;">Foram detectadas <strong>' + resp.incluidas + '</strong> linha(s) de crédito rural no arquivo. ' +
-    'Ao confirmar, a base atual será <strong>substituída</strong> (um backup automático será criado).</p>' +
-    '<div style="max-height:200px; overflow-y:auto; background:#fff; border:1px solid #eee; border-radius:4px; padding:8px 8px 8px 24px; margin-bottom:8px;">' +
-    '<ol style="font-size:13px; color:#333;">' + lista + '</ol></div>' +
-    exc +
+    '<strong style="color:#b3590f;">⚠️ Selecione as linhas que deseja incluir</strong>' +
+    '<p style="margin:8px 0; font-size:13px;">Detectadas <strong>' + resp.total + '</strong> linhas no arquivo. ' +
+    'Marque as que devem entrar na base. Ao confirmar, a base atual será <strong>substituída</strong> (backup automático).</p>' +
+    '<div style="margin:8px 0;"><strong style="color:#1f6b1f;">🌾 Crédito rural (' + rurais.length + ') — recomendadas</strong>' +
+    '<div style="max-height:180px; overflow-y:auto; background:#fff; border:1px solid #eee; border-radius:4px; padding:8px;">' + (htmlRural || '<em style="color:#999;">nenhuma</em>') + '</div></div>';
+
+  if (naoRurais.length) {
+    bloco += '<div style="margin:8px 0;"><strong style="color:#b3590f;">🏢 Outras linhas / não-rurais (' + naoRurais.length + ') — opcionais</strong>' +
+      '<div style="max-height:160px; overflow-y:auto; background:#fff; border:1px solid #eee; border-radius:4px; padding:8px;">' + htmlNao + '</div></div>';
+  }
+
+  bloco += '<div style="margin-top:6px; font-size:12px;">' +
+    '<a href="#" onclick="window.cresolMarcar(true);return false;" style="color:#005c46;">Marcar todas</a> &nbsp;·&nbsp; ' +
+    '<a href="#" onclick="window.cresolMarcar(false);return false;" style="color:#005c46;">Desmarcar todas</a></div>' +
     '<div style="margin-top:12px; display:flex; gap:10px;">' +
     '<button type="button" onclick="window.confirmarAtualizacaoCresol()" style="background:#28a745; padding:8px 18px; font-size:13px;">✓ Confirmar e Aplicar</button>' +
     '<button type="button" onclick="window.cancelarAtualizacaoCresol()" style="background:#6c757d; padding:8px 18px; font-size:13px;">✕ Cancelar</button>' +
     '</div></div>';
+
+  status.innerHTML = bloco;
+};
+
+window.cresolMarcar = function(val) {
+  const cbs = document.querySelectorAll('.cresol-sel');
+  for (let i = 0; i < cbs.length; i++) cbs[i].checked = val;
 };
 
 window.confirmarAtualizacaoCresol = function() {
   const status = document.getElementById('uploadStatus');
+  const sel = [];
+  const cbs = document.querySelectorAll('.cresol-sel');
+  for (let i = 0; i < cbs.length; i++) { if (cbs[i].checked) sel.push(parseInt(cbs[i].value, 10)); }
+  if (sel.length === 0) {
+    window.notificar('<strong>✕</strong> Selecione ao menos uma linha para incluir.', 'erro');
+    return;
+  }
   status.innerHTML = '<p style="color:#666; margin-top:12px;">⏳ Aplicando atualização e gerando backup...</p>';
   google.script.run
     .withSuccessHandler(function(resp) {
       if (resp && resp.sucesso) {
         status.innerHTML = '<div style="margin-top:12px; background:#eef6ee; border-left:4px solid #28a745; padding:12px 14px; border-radius:4px;">' +
           '<strong style="color:#1f6b1f;">✓ Base atualizada!</strong><br>' +
-          'Linhas ativas na base: <strong>' + resp.linhas + '</strong><br>' +
+          'Linhas incluídas na base: <strong>' + resp.linhas + '</strong><br>' +
           'Backup criado: <em>' + window.escaparHtml(resp.backup) + '</em></div>';
         document.getElementById('formUploadCresol').reset();
         window.carregarLinhasAdministrativo();
@@ -1254,7 +1293,7 @@ window.confirmarAtualizacaoCresol = function() {
     .withFailureHandler(function(error) {
       status.innerHTML = '<div style="margin-top:12px; color:red;">✕ Falha ao aplicar: ' + error + '</div>';
     })
-    .aplicarAtualizacaoCresol();
+    .aplicarAtualizacaoCresol(sel);
 };
 
 window.cancelarAtualizacaoCresol = function() {
