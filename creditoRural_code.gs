@@ -1034,6 +1034,11 @@ function _cresolParseBloco(b) {
     publico: _cresolFieldAfter(b, "Público_resumido:"),
     sistematica: _cresolFieldAfter(b, "Sistemática:"),
     taxa: _cresolFieldAfter(b, "Taxa de Juros Anual:"),
+    // Texto completo da taxa (pode ter várias linhas: portes, faixas, TR...)
+    taxaTexto: _cresolSection(b, "Taxa de Juros Anual:", [
+      "IOF", "Limites e Prazos", "Limite de Crédito", "Percentual de Financiamento",
+      "Prazo", "Condições", "Modalidades", "Normas", "Circular", "Garantias", "Restrições"
+    ]).join(" "),
     iof: _cresolFieldAfter(b, "IOF Complementar:") || _cresolFieldAfter(b, "IOF:"),
     limite: _cresolFieldAfter(b, "Limite de Crédito por Beneficiário:"),
     prazo: _cresolFieldAfter(b, "Prazo Total:"),
@@ -1154,7 +1159,7 @@ function _cresolMapear(rec, idNum) {
     status, new Date(), _cresolObs(rec),
     (rec.financia.join("; ")).substring(0, 900),
     (rec.produtos.join(", ")).substring(0, 1500),
-    String(rec.taxa || "").substring(0, 500)
+    String(rec.taxaTexto || rec.taxa || "").substring(0, 800)
   ];
 }
 
