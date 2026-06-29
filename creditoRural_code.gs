@@ -635,6 +635,252 @@ function salvarLinkConsulta(url) {
   }
 }
 
+// ============ ATUALIZAÇÃO DA BASE VIA ARQUIVO DA CRESOL (.docx) ============
+
+/**
+ * Recebe o formulário de upload (campo "arquivo" = .docx da Cresol),
+ * extrai as linhas de crédito e reconstrói a aba Linhas.
+ */
+function processarArquivoCresol(form) {
+  try {
+    const blob = form && form.arquivo;
+    if (!blob) return { sucesso: false, erro: "Nenhum arquivo recebido." };
+
+    blob.setContentType("application/zip");
+    const arquivos = Utilities.unzip(blob);
+    let docXml = null;
+    for (let i = 0; i < arquivos.length; i++) {
+      if (arquivos[i].getName() === "word/document.xml") {
+        docXml = arquivos[i].getDataAsString("UTF-8");
+        break;
+      }
+    }
+    if (!docXml) return { sucesso: false, erro: "Arquivo .docx inválido (document.xml não encontrado)." };
+
+    // Extrai texto por parágrafo e decodifica entidades XML
+    const texto = docXml
+      .replace(/<\/w:p>/g, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'");
+    const linhasTxt = texto.split("\n").map(s => s.trim());
+
+    const blocos = _cresolMontarBlocos(linhasTxt);
+    if (blocos.length === 0) {
+      return { sucesso: false, erro: "Nenhuma linha encontrada no arquivo (formato inesperado)." };
+    }
+
+    const rows = [];
+    const excluidas = [];
+    let idNum = 0;
+    for (let k = 0; k < blocos.length; k++) {
+      const rec = _cresolParseBloco(blocos[k]);
+      if (!rec.nome) continue;
+      if (!_cresolEhRural(rec.nome)) { excluidas.push(rec.nome); continue; }
+      idNum++;
+      rows.push(_cresolMapear(rec, idNum));
+    }
+    if (rows.length === 0) return { sucesso: false, erro: "Nenhuma linha rural válida encontrada no arquivo." };
+
+    _cresolEscreverLinhas(rows);
+    return { sucesso: true, total: blocos.length, incluidas: rows.length, excluidas: excluidas };
+  } catch (e) {
+    Logger.log("Erro em processarArquivoCresol: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
+function _cresolMontarBlocos(linhas) {
+  const idxs = [];
+  for (let i = 0; i < linhas.length; i++) {
+    if (linhas[i].indexOf("Nome da Linha de Crédito:") === 0) idxs.push(i);
+  }
+  const blocos = [];
+  for (let k = 0; k < idxs.length; k++) {
+    const start = idxs[k];
+    const end = (k + 1 < idxs.length) ? idxs[k + 1] : linhas.length;
+    blocos.push(linhas.slice(start, end));
+  }
+  return blocos;
+}
+
+function _cresolFieldAfter(block, label) {
+  for (let i = 0; i < block.length; i++) {
+    if (block[i].indexOf(label) === 0) return block[i].substring(label.length).trim();
+  }
+  return "";
+}
+
+function _cresolSection(block, startLabel, endLabels) {
+  const out = [];
+  let cap = false;
+  for (let i = 0; i < block.length; i++) {
+    const l = block[i];
+    if (!cap && l.indexOf(startLabel) === 0) {
+      cap = true;
+      const rest = l.substring(startLabel.length).trim();
+      if (rest) out.push(rest);
+      continue;
+    }
+    if (cap) {
+      let stop = false;
+      for (let j = 0; j < endLabels.length; j++) { if (l.indexOf(endLabels[j]) === 0) { stop = true; break; } }
+      if (stop) break;
+      if (l.trim()) out.push(l);
+    }
+  }
+  return out;
+}
+
+function _cresolParseBloco(b) {
+  return {
+    nome: _cresolFieldAfter(b, "Nome da Linha de Crédito:"),
+    tipo: _cresolFieldAfter(b, "Tipo de Linha:"),
+    objetivo: _cresolFieldAfter(b, "Objetivo:"),
+    publico: _cresolFieldAfter(b, "Público_resumido:"),
+    sistematica: _cresolFieldAfter(b, "Sistemática:"),
+    taxa: _cresolFieldAfter(b, "Taxa de Juros Anual:"),
+    iof: _cresolFieldAfter(b, "IOF Complementar:") || _cresolFieldAfter(b, "IOF:"),
+    limite: _cresolFieldAfter(b, "Limite de Crédito por Beneficiário:"),
+    prazo: _cresolFieldAfter(b, "Prazo Total:"),
+    circular: _cresolFieldAfter(b, "Circular BNDES:"),
+    requisitos: _cresolSection(b, "Requisitos:", ["Tipos:", "Financiamento:"]),
+    financia: _cresolSection(b, "O que financia:", ["Produtos Beneficiados:", "Sistemática:", "Garantias:"]),
+    produtos: _cresolSection(b, "Produtos Beneficiados:", ["Sistemática:", "Taxas e Encargos:", "Garantias:"])
+  };
+}
+
+function _cresolEhRural(nome) {
+  const n = nome.toUpperCase();
+  const exclui = ["FINEP", "FUNGETUR", "PROMOVE SUL", "FUNDO CLIMA", "PROCAPCRED",
+    "INVESTIMENTO EMPRESARIAL", "CRESOL EMPRESARIAL BNDES", "BNDES FINAME (FINAME BK"];
+  for (let i = 0; i < exclui.length; i++) { if (n.indexOf(exclui[i]) !== -1) return false; }
+  return true;
+}
+
+function _cresolNumTaxa(t) {
+  if (!t) return "0";
+  const m = String(t).match(/(\d+(?:[.,]\d+)?)/);
+  return m ? m[1].replace(",", ".") : "0";
+}
+
+function _cresolNumLimite(t) {
+  if (!t) return "0";
+  const re = /R\$\s*([\d.]+(?:,\d+)?)/g;
+  let m, max = 0, achou = false;
+  while ((m = re.exec(t))) {
+    const v = m[1].replace(/\./g, "").replace(",", ".");
+    const n = parseInt(parseFloat(v), 10);
+    if (!isNaN(n)) { achou = true; if (n > max) max = n; }
+  }
+  return achou ? String(max) : "0";
+}
+
+function _cresolPrazoMeses(t) {
+  if (!t) return "0";
+  let meses = 0, m;
+  const reAnos = /(\d+)\s*anos?/g;
+  while ((m = reAnos.exec(t))) { const v = parseInt(m[1], 10) * 12; if (v > meses) meses = v; }
+  const reMes = /(\d+)\s*mes/g;
+  while ((m = reMes.exec(t))) { const v = parseInt(m[1], 10); if (v > meses) meses = v; }
+  return String(meses);
+}
+
+function _cresolEnquadramento(pub, nome) {
+  const p = (pub || "").toUpperCase();
+  const n = nome.toUpperCase();
+  if (p.indexOf("PRONAF") !== -1 || n.indexOf("PRONAF") !== -1) return "Sem limite/R$ 500 mil";
+  if (p.indexOf("PRONAMP") !== -1 || n.indexOf("PRONAMP") !== -1) return "R$ 500 mil/R$ 3.5 mi";
+  return "Conforme análise";
+}
+
+function _cresolTags(nome, tipo, objetivo) {
+  const s = (nome + " " + tipo + " " + objetivo).toLowerCase();
+  const t = {};
+  if (s.indexOf("custeio") !== -1) t["custeio"] = 1;
+  const inv = ["investimento", "tratores", "colheitadeira", "máquina", "maquina", "finame", "moderfrota", "inovagro", "agroind", "habita", "bioeconomia", "pca", "prodecoop", "irriga", "renovagro"];
+  for (let i = 0; i < inv.length; i++) { if (s.indexOf(inv[i]) !== -1) { t["investimento"] = 1; break; } }
+  if (s.indexOf("pecuár") !== -1 || s.indexOf("pecuar") !== -1) t["pecuaria"] = 1;
+  if (s.indexOf("agrícola") !== -1 || s.indexOf("agricola") !== -1) t["agricola"] = 1;
+  if (s.indexOf("café") !== -1 || s.indexOf("cafe") !== -1 || s.indexOf("funcaf") !== -1) t["cafe"] = 1;
+  if (s.indexOf("irriga") !== -1) t["irrigacao"] = 1;
+  const mec = ["tratores", "colheitadeira", "máquina", "maquina", "moderfrota", "finame"];
+  for (let j = 0; j < mec.length; j++) { if (s.indexOf(mec[j]) !== -1) { t["mecanizacao"] = 1; break; } }
+  if (s.indexOf("pca") !== -1 || s.indexOf("armaz") !== -1) t["armazenagem"] = 1;
+  const sus = ["renovagro", "sustentável", "sustentavel", "agroecolog", "bioeconomia", "ambiental", "clima"];
+  for (let k = 0; k < sus.length; k++) { if (s.indexOf(sus[k]) !== -1) { t["sustentabilidade"] = 1; break; } }
+  if (s.indexOf("agroind") !== -1 || s.indexOf("industrial") !== -1) t["infraestrutura"] = 1;
+  let keys = Object.keys(t);
+  if (keys.length === 0) keys = ["investimento"];
+  keys.sort();
+  return keys.join(",");
+}
+
+function _cresolOrgao(rec) {
+  const src = ((rec.sistematica || "") + " " + (rec.circular || "")).toUpperCase();
+  if (src.indexOf("BNDES") !== -1) return "BNDES / Cresol";
+  if (src.indexOf("FCO") !== -1 || rec.nome.toUpperCase().indexOf("FCO") !== -1) return "FCO / Cresol";
+  if (src.indexOf("POUPAN") !== -1) return "Cresol (Poupança Rural)";
+  return "Cresol";
+}
+
+function _cresolDocumentos(pub) {
+  if ((pub || "").toUpperCase().indexOf("PRONAF") !== -1) return "CAF/DAP-Pronaf, RG, CPF, projeto técnico, comprovante de renda";
+  return "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda";
+}
+
+function _cresolObs(rec) {
+  const p = [];
+  if (rec.objetivo) p.push(rec.objetivo);
+  if (rec.sistematica) p.push("Sistemática: " + rec.sistematica);
+  if (rec.iof) p.push("IOF: " + rec.iof);
+  if (rec.prazo) p.push("Prazo: " + rec.prazo);
+  if (rec.circular) p.push("Norma: " + rec.circular);
+  return p.join(" | ").substring(0, 600);
+}
+
+function _cresolMapear(rec, idNum) {
+  const rid = "L" + ("000" + idNum).slice(-3);
+  const status = (rec.nome.toLowerCase().indexOf("fechado") !== -1) ? "Inativa" : "Ativa";
+  const taxa = _cresolNumTaxa(rec.taxa);
+  return [
+    rid, rec.nome, _cresolOrgao(rec),
+    (rec.objetivo || rec.tipo || "Crédito rural"),
+    _cresolTags(rec.nome, rec.tipo, rec.objetivo),
+    _cresolEnquadramento(rec.publico, rec.nome),
+    taxa, taxa,
+    _cresolPrazoMeses(rec.prazo), "0",
+    "0", _cresolNumLimite(rec.limite),
+    (rec.requisitos.join("; ")).substring(0, 600) || "Conforme política de crédito da Cresol",
+    _cresolDocumentos(rec.publico),
+    status, new Date(), _cresolObs(rec),
+    (rec.financia.join("; ")).substring(0, 900),
+    (rec.produtos.join(", ")).substring(0, 1500)
+  ];
+}
+
+function _cresolEscreverLinhas(rows) {
+  const headers = [
+    "ID", "Nome Linha", "Órgão/Instituição", "Finalidade Principal",
+    "Finalidades (tags)", "Enquadramento (Renda Min/Max)", "Taxa Mín (%)",
+    "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
+    "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
+    "Status (Ativa/Inativa)", "Data Atualização", "Observações",
+    "Itens Financiáveis", "Culturas Financiadas"
+  ];
+  SHEET_LINHAS.clear();
+  SHEET_LINHAS.appendRow(headers);
+  SHEET_LINHAS.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
+  if (rows.length) {
+    SHEET_LINHAS.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+  SHEET_LINHAS.setColumnWidths(1, headers.length, 80);
+}
+
 // ==================== INTERFACE WEB ====================
 
 function doGet() {
@@ -790,6 +1036,15 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <small style="color: #666; display: block; margin-bottom: 10px;">Este link é usado pelo botão "Consultar valor já financiado" na aba Consultar.</small>
 <button type="button" onclick="window.salvarLinkConsulta()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Link</button>
 </div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">📤 Atualizar base com o arquivo da Cresol (.docx)</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Envie o documento oficial mais recente. O sistema lê as modalidades e <strong>reconstrói a base de linhas</strong> (substitui a atual). Linhas não-rurais são ignoradas automaticamente.</small>
+<form id="formUploadCresol">
+<input type="file" name="arquivo" id="arquivoCresol" accept=".docx" style="margin-bottom: 10px;">
+</form>
+<button type="button" onclick="window.enviarArquivoCresol()" style="background: #f58220; padding: 8px 18px; font-size: 13px;">⬆️ Processar e Atualizar Linhas</button>
+<div id="uploadStatus"></div>
+</div>
 <div style="margin-bottom: 20px;">
 <button onclick="window.abrirFormularioNovaLinha()" style="background: #28a745;">➕ Incluir Nova Linha</button>
 </div>
@@ -854,6 +1109,43 @@ window.salvarLinkConsulta = function() {
       window.notificar('<strong>✕ Erro ao salvar:</strong><br>' + error, 'erro');
     })
     .salvarLinkConsulta(url);
+};
+
+window.enviarArquivoCresol = function() {
+  const input = document.getElementById('arquivoCresol');
+  const status = document.getElementById('uploadStatus');
+  if (!input.files || input.files.length === 0) {
+    window.notificar('<strong>✕</strong> Selecione um arquivo .docx primeiro.', 'erro');
+    return;
+  }
+  const nome = input.files[0].name || '';
+  if (nome.toLowerCase().indexOf('.docx') === -1) {
+    window.notificar('<strong>✕</strong> O arquivo deve ser .docx.', 'erro');
+    return;
+  }
+
+  status.innerHTML = '<p style="color:#666; margin-top:12px;">⏳ Processando o arquivo, aguarde (pode levar alguns segundos)...</p>';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso) {
+        let detalhe = 'Linhas incluídas: <strong>' + resp.incluidas + '</strong>';
+        if (resp.excluidas && resp.excluidas.length) {
+          detalhe += '<br>Ignoradas (não-rurais): ' + resp.excluidas.length;
+        }
+        status.innerHTML = '<div style="margin-top:12px; background:#eef6ee; border-left:4px solid #28a745; padding:12px 14px; border-radius:4px;">' +
+          '<strong style="color:#1f6b1f;">✓ Base atualizada com sucesso!</strong><br>' + detalhe + '</div>';
+        window.carregarLinhasAdministrativo();
+      } else {
+        status.innerHTML = '<div style="margin-top:12px; background:#fdecea; border-left:4px solid #dc3545; padding:12px 14px; border-radius:4px;">' +
+          '<strong style="color:#a4282b;">✕ Erro:</strong> ' + (resp ? resp.erro : 'desconhecido') + '</div>';
+      }
+    })
+    .withFailureHandler(function(error) {
+      status.innerHTML = '<div style="margin-top:12px; background:#fdecea; border-left:4px solid #dc3545; padding:12px 14px; border-radius:4px;">' +
+        '<strong style="color:#a4282b;">✕ Falha no envio:</strong> ' + error + '</div>';
+    })
+    .processarArquivoCresol(document.getElementById('formUploadCresol'));
 };
 
 window.produtosPorTipo = {
