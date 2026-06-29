@@ -10,6 +10,7 @@ const SHEET_LINHAS = SS.getSheetByName("Linhas") || SS.insertSheet("Linhas");
 const SHEET_CONFIG = SS.getSheetByName("Configurações") || SS.insertSheet("Configurações");
 const SHEET_HISTORICO = SS.getSheetByName("Histórico") || SS.insertSheet("Histórico");
 const SHEET_BASE = SS.getSheetByName("Base") || SS.insertSheet("Base");
+const SHEET_BASE_CREDITO = SS.getSheetByName("BaseCredito") || SS.insertSheet("BaseCredito");
 
 // ==================== INICIALIZAÇÃO DO SISTEMA ====================
 
@@ -1140,6 +1141,111 @@ function statusTriggerBaseAssociados() {
   } catch (e) { return false; }
 }
 
+// ============ BASE DE CRÉDITO TOMADO / LIMITE (XLSX) ============
+
+/**
+ * Converte um blob XLSX em matriz de valores, criando um Google Sheet
+ * temporário via Drive API e lendo a primeira aba.
+ */
+function _xlsxParaValores(blob) {
+  const boundary = "xlsxbnd" + Date.now();
+  const metadata = { name: "tmp_credito_" + Date.now(), mimeType: "application/vnd.google-apps.spreadsheet" };
+  const ct = blob.getContentType() || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const pre = "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" +
+    JSON.stringify(metadata) + "\r\n--" + boundary + "\r\nContent-Type: " + ct + "\r\n\r\n";
+  const post = "\r\n--" + boundary + "--";
+  const bytes = Utilities.newBlob(pre).getBytes().concat(blob.getBytes()).concat(Utilities.newBlob(post).getBytes());
+
+  const res = UrlFetchApp.fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true", {
+    method: "post",
+    contentType: "multipart/related; boundary=" + boundary,
+    payload: bytes,
+    headers: { Authorization: "Bearer " + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true
+  });
+  const code = res.getResponseCode();
+  if (code < 200 || code >= 300) {
+    throw new Error("Falha ao converter XLSX (HTTP " + code + "): " + res.getContentText().substring(0, 200));
+  }
+  const fileId = JSON.parse(res.getContentText()).id;
+  try {
+    return SpreadsheetApp.openById(fileId).getSheets()[0].getDataRange().getValues();
+  } finally {
+    try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) {}
+  }
+}
+
+/**
+ * Importa o XLSX de crédito tomado e grava na aba BaseCredito as colunas
+ * relevantes (mapeadas por posição):
+ * D=Valor financiado, G=Produto, S=Atividade, W=CPF/CNPJ,
+ * AB=Alíquota ProAgro, AC=Limite Custeio Disponível (C=Ano Safra).
+ */
+function processarArquivoCreditoBase(form) {
+  try {
+    const blob = form && form.arquivo;
+    if (!blob) return { sucesso: false, erro: "Nenhum arquivo recebido." };
+
+    const valores = _xlsxParaValores(blob);
+    if (!valores || valores.length < 2) return { sucesso: false, erro: "Planilha vazia ou inválida." };
+
+    const C = 2, D = 3, G = 6, S = 18, W = 22, AB = 27, AC = 28;
+    const out = [["CPF/CNPJ", "Ano Safra", "Produto/Finalidade", "Atividade", "Valor Financiado", "Alíquota ProAgro", "Limite Custeio Disponível"]];
+    for (let r = 1; r < valores.length; r++) {
+      const row = valores[r];
+      if (!row || row.length === 0) continue;
+      const cpf = String(row[W] || "").trim();
+      if (!cpf) continue;
+      out.push([cpf, row[C] || "", row[G] || "", row[S] || "", _numBR(row[D]), row[AB] || "", _numBR(row[AC])]);
+    }
+    if (out.length < 2) return { sucesso: false, erro: "Nenhuma linha com CPF/CNPJ encontrada (confira o layout/colunas do arquivo)." };
+
+    SHEET_BASE_CREDITO.clear();
+    SHEET_BASE_CREDITO.getRange(1, 1, out.length, out[0].length).setValues(out);
+    SHEET_BASE_CREDITO.getRange(1, 1, 1, out[0].length).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
+
+    return { sucesso: true, registros: out.length - 1, atualizado: new Date().toLocaleString("pt-BR") };
+  } catch (e) {
+    Logger.log("Erro em processarArquivoCreditoBase: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
+/**
+ * Retorna os financiamentos já tomados do CPF/CNPJ informado.
+ */
+function buscarCreditoTomado(cpfCnpj) {
+  try {
+    if (!cpfCnpj) return { sucesso: false, itens: [] };
+    const alvo = String(cpfCnpj).replace(/\D/g, "");
+    const dados = SHEET_BASE_CREDITO.getDataRange().getValues();
+    if (!dados || dados.length < 2) return { sucesso: false, erro: "Base de crédito tomado vazia.", itens: [] };
+
+    const itens = [];
+    let totalFin = 0, limiteMax = 0;
+    for (let r = 1; r < dados.length; r++) {
+      const cpf = String(dados[r][0] || "").replace(/\D/g, "");
+      if (cpf && cpf === alvo) {
+        const vf = _numBR(dados[r][4]);
+        const lim = _numBR(dados[r][6]);
+        totalFin += vf;
+        if (lim > limiteMax) limiteMax = lim;
+        itens.push({
+          anoSafra: dados[r][1] || "",
+          produto: dados[r][2] || "",
+          atividade: dados[r][3] || "",
+          valorFinanciado: vf,
+          aliquotaProagro: dados[r][5] || "",
+          limiteDisponivel: lim
+        });
+      }
+    }
+    return { sucesso: itens.length > 0, itens: itens, totalFinanciado: totalFin, limiteDisponivel: limiteMax };
+  } catch (e) {
+    return { sucesso: false, erro: e.toString(), itens: [] };
+  }
+}
+
 // ==================== INTERFACE WEB ====================
 
 function doGet() {
@@ -1267,6 +1373,7 @@ Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deix
 <button type="button" onclick="window.abrirConsultaSicor()" style="margin-top: 8px; background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; width: 100%;">🔎 Consultar valor já financiado</button>
 </div>
 </div>
+<div id="creditoTomadoBox" style="margin-bottom: 20px;"></div>
 <div class="form-group">
 <label>👤 Enquadramento Detectado</label>
 <input type="text" id="enquadramento" readonly style="background-color: #f0f0f0; cursor: not-allowed;" placeholder="Preenchido automaticamente pela renda">
@@ -1333,6 +1440,15 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <button type="button" id="btnTriggerBase" onclick="window.alternarTriggerBase()" style="background: #6c757d; padding: 8px 16px; font-size: 13px;">⏱️ Ativar atualização automática</button>
 </div>
 <div id="baseStatus" style="margin-top: 10px;"></div>
+</div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">💳 Base de Crédito Tomado / Limite Disponível (.xlsx)</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Importação manual. Envie o arquivo XLSX; o sistema busca pelo <strong>CPF/CNPJ</strong> e grava na aba "BaseCredito". Colunas usadas: D (valor financiado), G (produto), S (atividade), W (CPF/CNPJ), AB (alíquota ProAgro), AC (limite custeio disponível).</small>
+<form id="formUploadCredito">
+<input type="file" name="arquivo" id="arquivoCredito" accept=".xlsx" style="margin-bottom: 10px;">
+</form>
+<button type="button" onclick="window.enviarArquivoCredito()" style="background: #f58220; padding: 8px 18px; font-size: 13px;">⬆️ Importar Base de Crédito</button>
+<div id="creditoUploadStatus"></div>
 </div>
 <div style="margin-bottom: 20px;">
 <button onclick="window.abrirFormularioNovaLinha()" style="background: #28a745;">➕ Incluir Nova Linha</button>
@@ -1431,6 +1547,31 @@ window.atualizarBaseAgora = function() {
       st.innerHTML = '<div style="color:red;">✕ Falha: ' + error + '</div>';
     })
     .atualizarBaseAssociados();
+};
+
+window.enviarArquivoCredito = function() {
+  const input = document.getElementById('arquivoCredito');
+  const st = document.getElementById('creditoUploadStatus');
+  if (!input.files || input.files.length === 0) {
+    window.notificar('<strong>✕</strong> Selecione um arquivo .xlsx', 'erro');
+    return;
+  }
+  st.innerHTML = '<p style="color:#666; margin-top:8px;">⏳ Importando e convertendo a planilha (pode levar alguns segundos)...</p>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso) {
+        st.innerHTML = '<div style="margin-top:8px; background:#eef6ee; border-left:4px solid #28a745; padding:10px 12px; border-radius:4px;">' +
+          '<strong style="color:#1f6b1f;">✓ Base de crédito importada!</strong><br>Registros: <strong>' + resp.registros + '</strong><br>Em: ' + resp.atualizado + '</div>';
+        document.getElementById('formUploadCredito').reset();
+      } else {
+        st.innerHTML = '<div style="margin-top:8px; background:#fdecea; border-left:4px solid #dc3545; padding:10px 12px; border-radius:4px;">' +
+          '<strong style="color:#a4282b;">✕ Erro:</strong> ' + (resp ? resp.erro : 'desconhecido') + '</div>';
+      }
+    })
+    .withFailureHandler(function(error) {
+      st.innerHTML = '<div style="margin-top:8px; color:red;">✕ Falha: ' + error + '</div>';
+    })
+    .processarArquivoCreditoBase(document.getElementById('formUploadCredito'));
 };
 
 window.alternarTriggerBase = function() {
@@ -1673,6 +1814,9 @@ window.buscarAssociado = function(origem) {
         st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ ' + window.escaparHtml(resp.nome || 'Associado') +
           ' — renda mensal R$ ' + window.formatarMoeda(resp.rendaMensal) +
           ' (anualizada para enquadramento: R$ ' + window.formatarMoeda(resp.rendaAnual) + ').</span>';
+        // Busca também o crédito já tomado pelo CPF/CNPJ
+        const cpfBusca = (resp.cpfCnpj || cpf || '');
+        if (cpfBusca) window.carregarCreditoTomado(cpfBusca);
       } else {
         st.innerHTML = '<span style="color:#a4282b; font-size:12px;">✕ ' + (resp ? resp.erro : 'Erro na busca') + '</span>';
       }
@@ -1681,6 +1825,47 @@ window.buscarAssociado = function(origem) {
       st.innerHTML = '<span style="color:red; font-size:12px;">✕ ' + error + '</span>';
     })
     .buscarAssociado(termo);
+};
+
+window.carregarCreditoTomado = function(cpf) {
+  const box = document.getElementById('creditoTomadoBox');
+  if (!cpf) { box.innerHTML = ''; return; }
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso && resp.itens && resp.itens.length) {
+        // Preenche automaticamente o "Valor já tomado" com o total financiado
+        document.getElementById('valorTomado').value = Math.round(resp.totalFinanciado);
+        let linhas = '';
+        resp.itens.forEach(function(it) {
+          linhas += '<tr style="border-bottom:1px solid #eee;">' +
+            '<td style="padding:4px 8px;">' + window.escaparHtml(it.produto) + '</td>' +
+            '<td style="padding:4px 8px;">' + window.escaparHtml(it.atividade) + '</td>' +
+            '<td style="padding:4px 8px; text-align:center;">' + window.escaparHtml(String(it.anoSafra)) + '</td>' +
+            '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.valorFinanciado) + '</td>' +
+            '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.limiteDisponivel) + '</td></tr>';
+        });
+        box.innerHTML =
+          '<div style="background:#fff8ee; border:1px solid #f3c98b; border-left:4px solid #f58220; padding:12px; border-radius:6px;">' +
+          '<strong style="color:#b3590f;">💳 Crédito já tomado (base importada)</strong>' +
+          '<div style="overflow-x:auto; margin-top:8px;"><table style="width:100%; border-collapse:collapse; font-size:12px;">' +
+          '<thead><tr style="background:#005c46; color:#fff;">' +
+          '<th style="padding:4px 8px; text-align:left;">Produto/Finalidade</th>' +
+          '<th style="padding:4px 8px; text-align:left;">Atividade</th>' +
+          '<th style="padding:4px 8px;">Safra</th>' +
+          '<th style="padding:4px 8px;">Valor financiado</th>' +
+          '<th style="padding:4px 8px;">Limite custeio disp.</th></tr></thead>' +
+          '<tbody>' + linhas + '</tbody></table></div>' +
+          '<p style="margin-top:8px; font-size:13px;"><strong>Total já financiado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
+          ' &nbsp;|&nbsp; <strong>Limite custeio disponível:</strong> R$ ' + window.formatarMoeda(resp.limiteDisponivel) + '</p>' +
+          '<small style="color:#666;">O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
+      } else {
+        box.innerHTML = '<p style="color:#888; font-size:12px;">Sem registros de crédito tomado para este CPF/CNPJ na base.</p>';
+      }
+    })
+    .withFailureHandler(function(error) {
+      box.innerHTML = '<p style="color:red; font-size:12px;">✕ ' + error + '</p>';
+    })
+    .buscarCreditoTomado(cpf);
 };
 
 window.buscar = function() {
