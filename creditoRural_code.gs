@@ -30,7 +30,7 @@ function inicializarSheetLinhas() {
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
     "Status (Ativa/Inativa)", "Data Atualização", "Observações",
-    "Itens Financiáveis", "Culturas Financiadas"
+    "Itens Financiáveis", "Culturas Financiadas", "Taxa (descrição)"
   ];
 
   SHEET_LINHAS.appendRow(headers);
@@ -166,7 +166,7 @@ function inicializarSheetLinhas() {
   linhasNorm.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
-  SHEET_LINHAS.setColumnWidths(1, 19, 80);
+  SHEET_LINHAS.setColumnWidths(1, 20, 80);
   SHEET_LINHAS.getRange("O:O").setHorizontalAlignment("center");
 }
 
@@ -266,6 +266,7 @@ function buscarLinhas(parametros) {
             finalidade: linha[headers.indexOf("Finalidade Principal")] || "",
             taxaMin: parseFloat(linha[headers.indexOf("Taxa Mín (%)")]) || 0,
             taxaMax: parseFloat(linha[headers.indexOf("Taxa Máx (%)")]) || 0,
+            taxaDescricao: linha[headers.indexOf("Taxa (descrição)")] || "",
             prazo: parseInt(linha[headers.indexOf("Prazo (meses)")]) || 0,
             carencia: parseInt(linha[headers.indexOf("Carência (meses)")]) || 0,
             limiteMin: limiteMin,
@@ -631,6 +632,7 @@ function listarTodasAsLinhas() {
         enquadramento: sanitizarValor(linha[headers.indexOf("Enquadramento (Renda Min/Max)")]),
         taxaMin: sanitizarValor(linha[headers.indexOf("Taxa Mín (%)")]),
         taxaMax: sanitizarValor(linha[headers.indexOf("Taxa Máx (%)")]),
+        taxaDescricao: sanitizarValor(linha[headers.indexOf("Taxa (descrição)")]),
         prazo: sanitizarValor(linha[headers.indexOf("Prazo (meses)")]),
         carencia: sanitizarValor(linha[headers.indexOf("Carência (meses)")]),
         limiteMin: sanitizarValor(linha[headers.indexOf("Limite Min (R$)")]),
@@ -689,7 +691,8 @@ function adicionarLinha(dados) {
       "Data Atualização": new Date(),
       "Observações": dados.observacoes || "",
       "Itens Financiáveis": dados.itensFinanciaveis || "",
-      "Culturas Financiadas": dados.culturas || ""
+      "Culturas Financiadas": dados.culturas || "",
+      "Taxa (descrição)": dados.taxaDescricao || ""
     };
 
     const novaLinha = headers.map(h => (mapa[h] !== undefined ? mapa[h] : ""));
@@ -1150,7 +1153,8 @@ function _cresolMapear(rec, idNum) {
     _cresolDocumentos(rec.publico),
     status, new Date(), _cresolObs(rec),
     (rec.financia.join("; ")).substring(0, 900),
-    (rec.produtos.join(", ")).substring(0, 1500)
+    (rec.produtos.join(", ")).substring(0, 1500),
+    String(rec.taxa || "").substring(0, 500)
   ];
 }
 
@@ -1161,7 +1165,7 @@ function _cresolEscreverEmSheet(sheet, rows) {
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
     "Status (Ativa/Inativa)", "Data Atualização", "Observações",
-    "Itens Financiáveis", "Culturas Financiadas"
+    "Itens Financiáveis", "Culturas Financiadas", "Taxa (descrição)"
   ];
   sheet.clear();
   sheet.appendRow(headers);
@@ -2383,7 +2387,8 @@ window.mostrarResultados = function(linhas) {
       html += '<div class="linha-card"><h3>' + linha.nome + '</h3>';
       html += '<p style="font-size: 12px; color: #999;">Instituição: ' + linha.orgao + '</p>';
       html += '<div class="linha-info">';
-      html += '<div class="info-item"><span class="info-label">Taxa:</span><span class="info-value">' + linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.</span></div>';
+      const taxaTxt = (linha.taxaDescricao && String(linha.taxaDescricao).trim()) ? linha.taxaDescricao : (linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.');
+      html += '<div class="info-item"><span class="info-label">Taxa:</span><span class="info-value">' + taxaTxt + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Prazo:</span><span class="info-value">Até ' + linha.prazo + ' meses</span></div>';
       html += '<div class="info-item"><span class="info-label">Carência:</span><span class="info-value">' + linha.carencia + ' meses</span></div>';
       html += '<div class="info-item"><span class="info-label">Limite:</span><span class="info-value">R$ ' + window.formatarMoeda(linha.limiteMin) + ' a R$ ' + window.formatarMoeda(linha.limiteMax) + '</span></div>';
@@ -2447,7 +2452,7 @@ window._renderChecklist = function(linha, docs) {
   const e = window.escaparHtml;
   let detalhes = '<div style="margin-bottom:15px; font-size:13px;">' +
     '<p style="margin:4px 0;"><strong>Instituição:</strong> ' + e(linha.orgao) + '</p>' +
-    '<p style="margin:4px 0;"><strong>Taxa:</strong> ' + linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.</p>' +
+    '<p style="margin:4px 0;"><strong>Taxa:</strong> ' + ((linha.taxaDescricao && String(linha.taxaDescricao).trim()) ? e(linha.taxaDescricao) : (linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.')) + '</p>' +
     '<p style="margin:4px 0;"><strong>Prazo:</strong> até ' + linha.prazo + ' meses &nbsp;|&nbsp; <strong>Carência:</strong> ' + linha.carencia + ' meses</p>' +
     '<p style="margin:4px 0;"><strong>Limite:</strong> R$ ' + window.formatarMoeda(linha.limiteMin) + ' a R$ ' + window.formatarMoeda(linha.limiteMax) + '</p>';
   if (linha.itensFinanciaveis) detalhes += '<p style="margin:4px 0;"><strong>O que financia:</strong> ' + e(linha.itensFinanciaveis) + '</p>';
@@ -2605,7 +2610,7 @@ window.abrirFormularioNovaLinha = function() {
     id: '', nome: '', orgao: '', finalidadePrincipal: '', finalidades: '',
     enquadramento: 'Conforme análise', taxaMin: '', taxaMax: '', prazo: '',
     carencia: '', limiteMin: '', limiteMax: '', requisitos: '', documentos: '',
-    status: 'Ativa', observacoes: '', itensFinanciaveis: '', culturas: ''
+    status: 'Ativa', observacoes: '', itensFinanciaveis: '', culturas: '', taxaDescricao: ''
   };
   window.renderizarFormularioLinha(vazia, true);
 };
@@ -2656,6 +2661,7 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
 
   html += '</div>';
 
+  html += area('edit_taxa_desc', 'Taxa (descrição completa - texto livre, ex.: "Porte I-II 6,068% + TR...")', linha.taxaDescricao);
   html += area('edit_itens_financiaveis', 'Itens Financiáveis (o que pode ser financiado)', linha.itensFinanciaveis);
   html += area('edit_culturas', 'Culturas e Atividades Financiadas (custeio - lavouras e pecuária)', linha.culturas);
   html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
@@ -2700,6 +2706,7 @@ window.coletarDadosFormulario = function() {
     observacoes: document.getElementById('edit_observacoes').value,
     itensFinanciaveis: document.getElementById('edit_itens_financiaveis').value,
     culturas: document.getElementById('edit_culturas').value,
+    taxaDescricao: document.getElementById('edit_taxa_desc').value,
     status: document.getElementById('edit_status').value
   };
 };
@@ -2727,6 +2734,7 @@ window.salvarEdicaoLinha = function(idLinha) {
     'Observações': f.observacoes,
     'Itens Financiáveis': f.itensFinanciaveis,
     'Culturas Financiadas': f.culturas,
+    'Taxa (descrição)': f.taxaDescricao,
     'Status (Ativa/Inativa)': f.status
   };
 
