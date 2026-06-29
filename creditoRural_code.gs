@@ -1230,13 +1230,18 @@ function buscarCreditoTomado(cpfCnpj) {
     if (!dados || dados.length < 2) return { sucesso: false, erro: "Base de crédito tomado vazia.", itens: [] };
 
     const itens = [];
-    let totalFin = 0, limiteMax = 0;
+    let totalTomado = 0, limiteMax = 0;
     for (let r = 1; r < dados.length; r++) {
       const cpf = String(dados[r][0] || "").replace(/\D/g, "");
       if (cpf && cpf === alvo) {
-        const vf = _numBR(dados[r][4]);
-        const lim = _numBR(dados[r][6]);
-        totalFin += vf;
+        const vf = _numBR(dados[r][4]);            // valor financiado (bruto)
+        const lim = _numBR(dados[r][6]);           // limite custeio disponível
+        const aliqPct = _numBR(dados[r][5]);       // alíquota ProAgro (% a descontar)
+        // ProAgro só existe em custeio agrícola: quando há alíquota, o valor
+        // já tomado é o financiado descontado o percentual da alíquota.
+        const fator = aliqPct > 0 ? (1 - aliqPct / 100) : 1;
+        const vfTomado = vf * fator;
+        totalTomado += vfTomado;
         if (lim > limiteMax) limiteMax = lim;
         itens.push({
           anoSafra: dados[r][1] || "",
@@ -1244,11 +1249,12 @@ function buscarCreditoTomado(cpfCnpj) {
           atividade: dados[r][3] || "",
           valorFinanciado: vf,
           aliquotaProagro: dados[r][5] || "",
+          valorTomado: vfTomado,
           limiteDisponivel: lim
         });
       }
     }
-    return { sucesso: itens.length > 0, itens: itens, totalFinanciado: totalFin, limiteDisponivel: limiteMax };
+    return { sucesso: itens.length > 0, itens: itens, totalFinanciado: totalTomado, limiteDisponivel: limiteMax };
   } catch (e) {
     return { sucesso: false, erro: e.toString(), itens: [] };
   }
@@ -1841,15 +1847,19 @@ window.carregarCreditoTomado = function(cpf) {
   google.script.run
     .withSuccessHandler(function(resp) {
       if (resp && resp.sucesso && resp.itens && resp.itens.length) {
-        // Preenche automaticamente o "Valor já tomado" com o total financiado
+        // Preenche automaticamente o "Valor já tomado" com o total já tomado
+        // (financiado descontada a alíquota do ProAgro, quando houver).
         document.getElementById('valorTomado').value = Math.round(resp.totalFinanciado);
         let linhas = '';
         resp.itens.forEach(function(it) {
+          const aliq = String(it.aliquotaProagro || '').trim();
           linhas += '<tr style="border-bottom:1px solid #eee;">' +
             '<td style="padding:4px 8px;">' + window.escaparHtml(it.produto) + '</td>' +
             '<td style="padding:4px 8px;">' + window.escaparHtml(it.atividade) + '</td>' +
             '<td style="padding:4px 8px; text-align:center;">' + window.escaparHtml(String(it.anoSafra)) + '</td>' +
             '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.valorFinanciado) + '</td>' +
+            '<td style="padding:4px 8px; text-align:center;">' + (aliq ? window.escaparHtml(aliq) : '—') + '</td>' +
+            '<td style="padding:4px 8px; text-align:right;"><strong>R$ ' + window.formatarMoeda(it.valorTomado) + '</strong></td>' +
             '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.limiteDisponivel) + '</td></tr>';
         });
         box.innerHTML =
@@ -1861,11 +1871,13 @@ window.carregarCreditoTomado = function(cpf) {
           '<th style="padding:4px 8px; text-align:left;">Atividade</th>' +
           '<th style="padding:4px 8px;">Safra</th>' +
           '<th style="padding:4px 8px;">Valor financiado</th>' +
+          '<th style="padding:4px 8px;">Alíq. ProAgro</th>' +
+          '<th style="padding:4px 8px;">Valor já tomado</th>' +
           '<th style="padding:4px 8px;">Limite custeio disp.</th></tr></thead>' +
           '<tbody>' + linhas + '</tbody></table></div>' +
-          '<p style="margin-top:8px; font-size:13px;"><strong>Total já financiado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
+          '<p style="margin-top:8px; font-size:13px;"><strong>Total já tomado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
           ' &nbsp;|&nbsp; <strong>Limite custeio disponível:</strong> R$ ' + window.formatarMoeda(resp.limiteDisponivel) + '</p>' +
-          '<small style="color:#666;">O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
+          '<small style="color:#666;">Valor já tomado = valor financiado menos a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
       } else {
         box.innerHTML = '<p style="color:#888; font-size:12px;">Sem registros de crédito tomado para este CPF/CNPJ na base.</p>';
       }
