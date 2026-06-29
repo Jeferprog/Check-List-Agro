@@ -9,6 +9,7 @@ const SS = SpreadsheetApp.getActiveSpreadsheet();
 const SHEET_LINHAS = SS.getSheetByName("Linhas") || SS.insertSheet("Linhas");
 const SHEET_CONFIG = SS.getSheetByName("Configurações") || SS.insertSheet("Configurações");
 const SHEET_HISTORICO = SS.getSheetByName("Histórico") || SS.insertSheet("Histórico");
+const SHEET_BASE = SS.getSheetByName("Base") || SS.insertSheet("Base");
 
 // ==================== INICIALIZAÇÃO DO SISTEMA ====================
 
@@ -960,6 +961,185 @@ function _cresolEscreverEmSheet(sheet, rows) {
   sheet.setColumnWidths(1, headers.length, 80);
 }
 
+// ============ BASE DE ASSOCIADOS (basedepessoas.csv) ============
+
+const PARAM_LINK_BASE = "Link Pasta Base de Associados";
+
+function obterLinkBase() {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_LINK_BASE) return String(dados[i][1] || "").trim();
+    }
+    return "";
+  } catch (e) { return ""; }
+}
+
+function salvarLinkBase(url) {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_LINK_BASE) {
+        SHEET_CONFIG.getRange(i + 1, 2).setValue(url);
+        return { sucesso: true };
+      }
+    }
+    SHEET_CONFIG.appendRow([PARAM_LINK_BASE, url, "url", "Pasta/arquivo (Drive) com basedepessoas.csv"]);
+    return { sucesso: true };
+  } catch (e) { return { sucesso: false, erro: e.toString() }; }
+}
+
+/**
+ * Lê o conteúdo do CSV a partir de um link de pasta ou arquivo do Drive,
+ * ou de uma URL direta.
+ */
+function _lerCsvDoLink(link, filename) {
+  // Link de pasta do Drive
+  const mFolder = link.match(/folders\/([a-zA-Z0-9_\-]+)/);
+  if (mFolder) {
+    const folder = DriveApp.getFolderById(mFolder[1]);
+    const it = folder.getFilesByName(filename);
+    if (it.hasNext()) return it.next().getBlob().getDataAsString("UTF-8");
+    const its = folder.getFiles();
+    while (its.hasNext()) {
+      const f = its.next();
+      if (f.getName().toLowerCase().indexOf(".csv") !== -1) return f.getBlob().getDataAsString("UTF-8");
+    }
+    return null;
+  }
+  // Link de arquivo do Drive (/d/<id> ou ?id=<id>)
+  const idm = link.match(/(?:\/d\/|id=)([a-zA-Z0-9_\-]+)/);
+  if (idm) return DriveApp.getFileById(idm[1]).getBlob().getDataAsString("UTF-8");
+  // URL direta
+  if (/^https?:\/\//.test(link)) return UrlFetchApp.fetch(link).getContentText();
+  // Talvez seja só um ID
+  const mId = link.match(/^[a-zA-Z0-9_\-]{20,}$/);
+  if (mId) return DriveApp.getFileById(link).getBlob().getDataAsString("UTF-8");
+  return null;
+}
+
+/**
+ * Busca o basedepessoas.csv no link configurado e regrava a aba Base.
+ * Também é chamada pelo trigger automático.
+ */
+function atualizarBaseAssociados() {
+  try {
+    const link = obterLinkBase();
+    if (!link) return { sucesso: false, erro: "Configure o link da pasta/arquivo da base na aba Administrativo." };
+
+    const conteudo = _lerCsvDoLink(link, "basedepessoas.csv");
+    if (!conteudo) return { sucesso: false, erro: "Arquivo basedepessoas.csv não encontrado no link informado." };
+
+    const primeiraLinha = conteudo.split("\n")[0] || "";
+    const delim = (primeiraLinha.split(";").length > primeiraLinha.split(",").length) ? ";" : ",";
+    const dados = Utilities.parseCsv(conteudo, delim);
+    if (!dados || dados.length < 2) return { sucesso: false, erro: "CSV vazio ou inválido." };
+
+    // Normaliza largura das linhas
+    const largura = dados[0].length;
+    const norm = dados.map(function (r) {
+      const linha = r.slice(0, largura);
+      while (linha.length < largura) linha.push("");
+      return linha;
+    });
+
+    SHEET_BASE.clear();
+    SHEET_BASE.getRange(1, 1, norm.length, largura).setValues(norm);
+    SHEET_BASE.getRange(1, 1, 1, largura).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
+
+    return { sucesso: true, registros: norm.length - 1, atualizado: new Date().toLocaleString("pt-BR") };
+  } catch (e) {
+    Logger.log("Erro em atualizarBaseAssociados: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
+function _numBR(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  if (typeof v === "number") return v;
+  let s = String(v).replace(/[^\d.,\-]/g, "");
+  if (s.indexOf(",") !== -1) s = s.replace(/\./g, "").replace(",", ".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+/**
+ * Busca um associado na aba Base por conta ou CPF/CNPJ (somente dígitos).
+ * vl_anual_fonte_renda_total é a renda MENSAL (apesar do nome) -> anualiza.
+ */
+function buscarAssociado(termo) {
+  try {
+    if (!termo) return { sucesso: false, erro: "Informe a conta ou o CPF/CNPJ." };
+    const alvo = String(termo).replace(/\D/g, "");
+    if (!alvo) return { sucesso: false, erro: "Informe um número válido." };
+
+    const dados = SHEET_BASE.getDataRange().getValues();
+    if (!dados || dados.length < 2) {
+      return { sucesso: false, erro: "Base de associados vazia. Atualize a base na aba Administrativo." };
+    }
+    const H = dados[0].map(function (h) { return String(h).trim(); });
+    const iCpf = H.indexOf("nr_cpf_cnpj");
+    const iConta = H.indexOf("nr_conta_corrente");
+    const iNome = H.indexOf("nm_nome");
+    const iRenda = H.indexOf("vl_anual_fonte_renda_total");
+    const iTipo = H.indexOf("ds_pessoa_tipo");
+
+    for (let r = 1; r < dados.length; r++) {
+      const cpf = iCpf !== -1 ? String(dados[r][iCpf] || "").replace(/\D/g, "") : "";
+      const conta = iConta !== -1 ? String(dados[r][iConta] || "").replace(/\D/g, "") : "";
+      if ((cpf && cpf === alvo) || (conta && conta === alvo)) {
+        const rendaMensal = iRenda !== -1 ? _numBR(dados[r][iRenda]) : 0;
+        return {
+          sucesso: true,
+          nome: iNome !== -1 ? (dados[r][iNome] || "") : "",
+          cpfCnpj: iCpf !== -1 ? (dados[r][iCpf] || "") : "",
+          conta: iConta !== -1 ? (dados[r][iConta] || "") : "",
+          tipo: iTipo !== -1 ? (dados[r][iTipo] || "") : "",
+          rendaMensal: rendaMensal,
+          rendaAnual: Math.round(rendaMensal * 12)
+        };
+      }
+    }
+    return { sucesso: false, erro: "Associado não encontrado na base." };
+  } catch (e) {
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
+// ---- Trigger automático de atualização da base ----
+
+function criarTriggerBaseAssociados() {
+  try {
+    const ts = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < ts.length; i++) {
+      if (ts[i].getHandlerFunction() === "atualizarBaseAssociados") ScriptApp.deleteTrigger(ts[i]);
+    }
+    ScriptApp.newTrigger("atualizarBaseAssociados").timeBased().everyDays(1).atHour(5).create();
+    return { sucesso: true };
+  } catch (e) { return { sucesso: false, erro: e.toString() }; }
+}
+
+function removerTriggerBaseAssociados() {
+  try {
+    const ts = ScriptApp.getProjectTriggers();
+    let n = 0;
+    for (let i = 0; i < ts.length; i++) {
+      if (ts[i].getHandlerFunction() === "atualizarBaseAssociados") { ScriptApp.deleteTrigger(ts[i]); n++; }
+    }
+    return { sucesso: true, removidos: n };
+  } catch (e) { return { sucesso: false, erro: e.toString() }; }
+}
+
+function statusTriggerBaseAssociados() {
+  try {
+    const ts = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < ts.length; i++) {
+      if (ts[i].getHandlerFunction() === "atualizarBaseAssociados") return true;
+    }
+    return false;
+  } catch (e) { return false; }
+}
+
 // ==================== INTERFACE WEB ====================
 
 function doGet() {
@@ -1048,7 +1228,26 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 
 <div id="consulta" class="tab-content active">
 <div class="alert alert-info">
-<strong>ℹ️ Como usar:</strong> Preencha os campos com dados do associado para encontrar linhas disponíveis.
+<strong>ℹ️ Como usar:</strong> Informe a conta ou o CPF/CNPJ para carregar os dados do associado, ou preencha manualmente.
+</div>
+<div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px; margin-bottom: 20px; background: #fafbfb;">
+<strong style="color: #005c46; display: block; margin-bottom: 10px;">👤 Dados do Associado</strong>
+<div class="grid-2">
+<div class="form-group" style="margin-bottom: 12px;">
+<label>🔢 Conta</label>
+<input type="text" id="conta" placeholder="Nº da conta" onchange="window.buscarAssociado('conta')">
+</div>
+<div class="form-group" style="margin-bottom: 12px;">
+<label>🆔 CPF/CNPJ</label>
+<input type="text" id="cpfcnpj" placeholder="Somente números" onchange="window.buscarAssociado('cpf')">
+</div>
+</div>
+<div class="form-group" style="margin-bottom: 10px;">
+<label>📛 Nome do Associado</label>
+<input type="text" id="nomeAssociado" readonly style="background-color: #f0f0f0;" placeholder="Preenchido automaticamente pela busca">
+</div>
+<button type="button" onclick="window.buscarAssociado('manual')" style="background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">🔍 Buscar Associado</button>
+<div id="assocStatus" style="margin-top: 8px;"></div>
 </div>
 <div class="form-group">
 <label>📦 Produto/Finalidade <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional - refina a busca)</span></label>
@@ -1116,13 +1315,24 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <button type="button" onclick="window.salvarLinkConsulta()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Link</button>
 </div>
 <div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
-<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">📤 Atualizar base com o arquivo da Cresol (.docx)</label>
-<small style="color: #666; display: block; margin-bottom: 10px;">Envie o documento oficial mais recente. O sistema lê as modalidades e <strong>reconstrói a base de linhas</strong> (substitui a atual). Linhas não-rurais são ignoradas automaticamente.</small>
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">📤 Atualizar base de linhas com o arquivo da Cresol (.docx)</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Envie o documento oficial mais recente. O sistema lê as modalidades e mostra uma <strong>pré-visualização</strong> para você escolher quais linhas incluir antes de substituir a base (com backup automático).</small>
 <form id="formUploadCresol">
 <input type="file" name="arquivo" id="arquivoCresol" accept=".docx" style="margin-bottom: 10px;">
 </form>
 <button type="button" onclick="window.enviarArquivoCresol()" style="background: #f58220; padding: 8px 18px; font-size: 13px;">⬆️ Processar e Atualizar Linhas</button>
 <div id="uploadStatus"></div>
+</div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">👥 Base de Associados (basedepessoas.csv)</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Informe o link da pasta (ou arquivo) do Google Drive onde o <strong>basedepessoas.csv</strong> é disponibilizado. O sistema busca o arquivo e atualiza a aba "Base".</small>
+<input type="text" id="linkBaseInput" placeholder="https://drive.google.com/drive/folders/..." style="margin-bottom: 10px;">
+<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+<button type="button" onclick="window.salvarLinkBase()" style="background: #005c46; padding: 8px 16px; font-size: 13px;">💾 Salvar Link</button>
+<button type="button" onclick="window.atualizarBaseAgora()" style="background: #f58220; padding: 8px 16px; font-size: 13px;">🔄 Atualizar Base Agora</button>
+<button type="button" id="btnTriggerBase" onclick="window.alternarTriggerBase()" style="background: #6c757d; padding: 8px 16px; font-size: 13px;">⏱️ Ativar atualização automática</button>
+</div>
+<div id="baseStatus" style="margin-top: 10px;"></div>
 </div>
 <div style="margin-bottom: 20px;">
 <button onclick="window.abrirFormularioNovaLinha()" style="background: #28a745;">➕ Incluir Nova Linha</button>
@@ -1160,9 +1370,87 @@ window.mudarAba = function(event, abaId) {
   if (abaId === 'admin') {
     window.carregarLinhasAdministrativo();
     window.carregarLinkConsulta();
+    window.carregarConfigBase();
   } else if (abaId === 'historico') {
     window.carregarHistorico();
   }
+};
+
+window.carregarConfigBase = function() {
+  google.script.run
+    .withSuccessHandler(function(link) {
+      const input = document.getElementById('linkBaseInput');
+      if (input) input.value = link || '';
+    })
+    .withFailureHandler(function(e) { console.error('Erro ao carregar link base:', e); })
+    .obterLinkBase();
+
+  google.script.run
+    .withSuccessHandler(function(ativo) {
+      const btn = document.getElementById('btnTriggerBase');
+      if (!btn) return;
+      if (ativo) {
+        btn.textContent = '⏱️ Atualização automática ATIVA (desativar)';
+        btn.style.background = '#28a745';
+      } else {
+        btn.textContent = '⏱️ Ativar atualização automática';
+        btn.style.background = '#6c757d';
+      }
+      btn.dataset.ativo = ativo ? '1' : '0';
+    })
+    .withFailureHandler(function(e) { console.error(e); })
+    .statusTriggerBaseAssociados();
+};
+
+window.salvarLinkBase = function() {
+  const url = document.getElementById('linkBaseInput').value.trim();
+  google.script.run
+    .withSuccessHandler(function() {
+      window.notificar('<strong>✓ Sucesso!</strong><br>Link da base salvo.');
+    })
+    .withFailureHandler(function(error) {
+      window.notificar('<strong>✕ Erro ao salvar:</strong><br>' + error, 'erro');
+    })
+    .salvarLinkBase(url);
+};
+
+window.atualizarBaseAgora = function() {
+  const st = document.getElementById('baseStatus');
+  st.innerHTML = '<p style="color:#666;">⏳ Buscando e atualizando a base de associados...</p>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso) {
+        st.innerHTML = '<div style="background:#eef6ee; border-left:4px solid #28a745; padding:10px 12px; border-radius:4px;">' +
+          '<strong style="color:#1f6b1f;">✓ Base atualizada!</strong><br>Registros: <strong>' + resp.registros + '</strong><br>Em: ' + resp.atualizado + '</div>';
+      } else {
+        st.innerHTML = '<div style="background:#fdecea; border-left:4px solid #dc3545; padding:10px 12px; border-radius:4px;">' +
+          '<strong style="color:#a4282b;">✕ Erro:</strong> ' + (resp ? resp.erro : 'desconhecido') + '</div>';
+      }
+    })
+    .withFailureHandler(function(error) {
+      st.innerHTML = '<div style="color:red;">✕ Falha: ' + error + '</div>';
+    })
+    .atualizarBaseAssociados();
+};
+
+window.alternarTriggerBase = function() {
+  const btn = document.getElementById('btnTriggerBase');
+  const ativo = btn.dataset.ativo === '1';
+  const st = document.getElementById('baseStatus');
+  st.innerHTML = '<p style="color:#666;">⏳ ' + (ativo ? 'Desativando' : 'Ativando') + ' atualização automática...</p>';
+  const fn = ativo ? 'removerTriggerBaseAssociados' : 'criarTriggerBaseAssociados';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso) {
+        window.notificar('<strong>✓</strong> Atualização automática ' + (ativo ? 'desativada' : 'ativada (diária, ~5h)') + '.');
+        window.carregarConfigBase();
+        st.innerHTML = '';
+      } else {
+        st.innerHTML = '<div style="color:red;">✕ ' + (resp ? resp.erro : 'erro') + '</div>';
+      }
+    })
+    .withFailureHandler(function(error) { st.innerHTML = '<div style="color:red;">✕ ' + error + '</div>'; })
+    [fn]();
 };
 
 window.carregarLinkConsulta = function() {
@@ -1358,6 +1646,41 @@ window.atualizarProdutosDisponiveis = function() {
   const produtos = window.produtosPorTipo[tipoOperacao];
   listaProdutos.textContent = produtos.join(' • ');
   produtosDiv.style.display = 'block';
+};
+
+window.buscarAssociado = function(origem) {
+  const conta = document.getElementById('conta').value.trim();
+  const cpf = document.getElementById('cpfcnpj').value.trim();
+  let termo = '';
+  if (origem === 'conta') termo = conta;
+  else if (origem === 'cpf') termo = cpf;
+  else termo = cpf || conta;
+  if (!termo) return;
+
+  const st = document.getElementById('assocStatus');
+  st.innerHTML = '<span style="color:#666; font-size:12px;">Buscando associado...</span>';
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso) {
+        document.getElementById('nomeAssociado').value = resp.nome || '';
+        if (resp.conta) document.getElementById('conta').value = resp.conta;
+        if (resp.cpfCnpj) document.getElementById('cpfcnpj').value = resp.cpfCnpj;
+        if (resp.rendaAnual) {
+          document.getElementById('renda').value = resp.rendaAnual;
+          window.atualizarEnquadramento();
+        }
+        st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ ' + window.escaparHtml(resp.nome || 'Associado') +
+          ' — renda mensal R$ ' + window.formatarMoeda(resp.rendaMensal) +
+          ' (anualizada para enquadramento: R$ ' + window.formatarMoeda(resp.rendaAnual) + ').</span>';
+      } else {
+        st.innerHTML = '<span style="color:#a4282b; font-size:12px;">✕ ' + (resp ? resp.erro : 'Erro na busca') + '</span>';
+      }
+    })
+    .withFailureHandler(function(error) {
+      st.innerHTML = '<span style="color:red; font-size:12px;">✕ ' + error + '</span>';
+    })
+    .buscarAssociado(termo);
 };
 
 window.buscar = function() {
