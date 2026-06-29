@@ -11,6 +11,7 @@ const SHEET_CONFIG = SS.getSheetByName("Configurações") || SS.insertSheet("Con
 const SHEET_HISTORICO = SS.getSheetByName("Histórico") || SS.insertSheet("Histórico");
 const SHEET_BASE = SS.getSheetByName("Base") || SS.insertSheet("Base");
 const SHEET_BASE_CREDITO = SS.getSheetByName("BaseCredito") || SS.insertSheet("BaseCredito");
+const SHEET_CHECKLIST = SS.getSheetByName("ChecklistDocs") || SS.insertSheet("ChecklistDocs");
 
 // ==================== INICIALIZAÇÃO DO SISTEMA ====================
 
@@ -29,7 +30,7 @@ function inicializarSheetLinhas() {
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
     "Status (Ativa/Inativa)", "Data Atualização", "Observações",
-    "Itens Financiáveis", "Culturas Financiadas"
+    "Itens Financiáveis", "Culturas Financiadas", "Taxa (descrição)"
   ];
 
   SHEET_LINHAS.appendRow(headers);
@@ -165,7 +166,7 @@ function inicializarSheetLinhas() {
   linhasNorm.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
-  SHEET_LINHAS.setColumnWidths(1, 19, 80);
+  SHEET_LINHAS.setColumnWidths(1, 20, 80);
   SHEET_LINHAS.getRange("O:O").setHorizontalAlignment("center");
 }
 
@@ -265,6 +266,7 @@ function buscarLinhas(parametros) {
             finalidade: linha[headers.indexOf("Finalidade Principal")] || "",
             taxaMin: parseFloat(linha[headers.indexOf("Taxa Mín (%)")]) || 0,
             taxaMax: parseFloat(linha[headers.indexOf("Taxa Máx (%)")]) || 0,
+            taxaDescricao: linha[headers.indexOf("Taxa (descrição)")] || "",
             prazo: parseInt(linha[headers.indexOf("Prazo (meses)")]) || 0,
             carencia: parseInt(linha[headers.indexOf("Carência (meses)")]) || 0,
             limiteMin: limiteMin,
@@ -630,6 +632,7 @@ function listarTodasAsLinhas() {
         enquadramento: sanitizarValor(linha[headers.indexOf("Enquadramento (Renda Min/Max)")]),
         taxaMin: sanitizarValor(linha[headers.indexOf("Taxa Mín (%)")]),
         taxaMax: sanitizarValor(linha[headers.indexOf("Taxa Máx (%)")]),
+        taxaDescricao: sanitizarValor(linha[headers.indexOf("Taxa (descrição)")]),
         prazo: sanitizarValor(linha[headers.indexOf("Prazo (meses)")]),
         carencia: sanitizarValor(linha[headers.indexOf("Carência (meses)")]),
         limiteMin: sanitizarValor(linha[headers.indexOf("Limite Min (R$)")]),
@@ -688,7 +691,8 @@ function adicionarLinha(dados) {
       "Data Atualização": new Date(),
       "Observações": dados.observacoes || "",
       "Itens Financiáveis": dados.itensFinanciaveis || "",
-      "Culturas Financiadas": dados.culturas || ""
+      "Culturas Financiadas": dados.culturas || "",
+      "Taxa (descrição)": dados.taxaDescricao || ""
     };
 
     const novaLinha = headers.map(h => (mapa[h] !== undefined ? mapa[h] : ""));
@@ -752,6 +756,50 @@ function usuarioEhAdmin() {
   if (lista.length === 0) return true;
   const email = usuarioAtualEmail();
   return !!email && lista.indexOf(email) !== -1;
+}
+
+// ---- Limites de custeio por enquadramento (configuráveis) ----
+
+const PARAM_LIMITE_PRONAF = "Limite Custeio PRONAF";
+const PARAM_LIMITE_PRONAMP = "Limite Custeio PRONAMP";
+
+function _obterParamNum(nome, padrao) {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === nome) {
+        const v = _numBR(dados[i][1]);
+        return v > 0 ? v : padrao;
+      }
+    }
+  } catch (e) {}
+  return padrao;
+}
+
+function _salvarParam(nome, valor, tipo, desc) {
+  const dados = SHEET_CONFIG.getDataRange().getValues();
+  for (let i = 1; i < dados.length; i++) {
+    if (String(dados[i][0]).trim() === nome) {
+      SHEET_CONFIG.getRange(i + 1, 2).setValue(valor);
+      return;
+    }
+  }
+  SHEET_CONFIG.appendRow([nome, valor, tipo || "text", desc || ""]);
+}
+
+function obterLimitesEnquadramento() {
+  return {
+    pronaf: _obterParamNum(PARAM_LIMITE_PRONAF, 250000),
+    pronamp: _obterParamNum(PARAM_LIMITE_PRONAMP, 1500000)
+  };
+}
+
+function salvarLimitesEnquadramento(pronaf, pronamp) {
+  try {
+    _salvarParam(PARAM_LIMITE_PRONAF, _numBR(pronaf), "number", "Limite de custeio para PRONAF");
+    _salvarParam(PARAM_LIMITE_PRONAMP, _numBR(pronamp), "number", "Limite de custeio para PRONAMP");
+    return { sucesso: true };
+  } catch (e) { return { sucesso: false, erro: e.toString() }; }
 }
 
 /**
@@ -1105,7 +1153,8 @@ function _cresolMapear(rec, idNum) {
     _cresolDocumentos(rec.publico),
     status, new Date(), _cresolObs(rec),
     (rec.financia.join("; ")).substring(0, 900),
-    (rec.produtos.join(", ")).substring(0, 1500)
+    (rec.produtos.join(", ")).substring(0, 1500),
+    String(rec.taxa || "").substring(0, 500)
   ];
 }
 
@@ -1116,7 +1165,7 @@ function _cresolEscreverEmSheet(sheet, rows) {
     "Taxa Máx (%)", "Prazo (meses)", "Carência (meses)", "Limite Min (R$)",
     "Limite Máx (R$)", "Requisitos", "Documentos Necessários",
     "Status (Ativa/Inativa)", "Data Atualização", "Observações",
-    "Itens Financiáveis", "Culturas Financiadas"
+    "Itens Financiáveis", "Culturas Financiadas", "Taxa (descrição)"
   ];
   sheet.clear();
   sheet.appendRow(headers);
@@ -1321,10 +1370,10 @@ function statusTriggerBaseAssociados() {
  * Converte um blob XLSX em matriz de valores, criando um Google Sheet
  * temporário via Drive API e lendo a primeira aba.
  */
-function _xlsxParaValores(blob) {
-  const boundary = "xlsxbnd" + Date.now();
-  const metadata = { name: "tmp_credito_" + Date.now(), mimeType: "application/vnd.google-apps.spreadsheet" };
-  const ct = blob.getContentType() || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+function _uploadConvert(blob, targetMime) {
+  const boundary = "conv" + Date.now();
+  const metadata = { name: "tmp_conv_" + Date.now(), mimeType: targetMime };
+  const ct = blob.getContentType() || "application/octet-stream";
   const pre = "--" + boundary + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" +
     JSON.stringify(metadata) + "\r\n--" + boundary + "\r\nContent-Type: " + ct + "\r\n\r\n";
   const post = "\r\n--" + boundary + "--";
@@ -1339,9 +1388,13 @@ function _xlsxParaValores(blob) {
   });
   const code = res.getResponseCode();
   if (code < 200 || code >= 300) {
-    throw new Error("Falha ao converter XLSX (HTTP " + code + "): " + res.getContentText().substring(0, 200));
+    throw new Error("Falha na conversão do arquivo (HTTP " + code + "): " + res.getContentText().substring(0, 200));
   }
-  const fileId = JSON.parse(res.getContentText()).id;
+  return JSON.parse(res.getContentText()).id;
+}
+
+function _xlsxParaValores(blob) {
+  const fileId = _uploadConvert(blob, "application/vnd.google-apps.spreadsheet");
   try {
     return SpreadsheetApp.openById(fileId).getSheets()[0].getDataRange().getValues();
   } finally {
@@ -1363,14 +1416,14 @@ function processarArquivoCreditoBase(form) {
     const valores = _xlsxParaValores(blob);
     if (!valores || valores.length < 2) return { sucesso: false, erro: "Planilha vazia ou inválida." };
 
-    const C = 2, D = 3, G = 6, S = 18, W = 22, AB = 27, AC = 28;
-    const out = [["CPF/CNPJ", "Ano Safra", "Produto/Finalidade", "Atividade", "Valor Financiado", "Alíquota ProAgro", "Limite Custeio Disponível"]];
+    const C = 2, D = 3, G = 6, K = 10, S = 18, W = 22, AB = 27, AC = 28;
+    const out = [["CPF/CNPJ", "Ano Safra", "IF Financiamento", "Produto/Finalidade", "Atividade", "Valor Financiado", "Alíquota ProAgro", "Limite Custeio Disponível"]];
     for (let r = 1; r < valores.length; r++) {
       const row = valores[r];
       if (!row || row.length === 0) continue;
       const cpf = String(row[W] || "").trim();
       if (!cpf) continue;
-      out.push([cpf, row[C] || "", row[G] || "", row[S] || "", _numBR(row[D]), row[AB] || "", _numBR(row[AC])]);
+      out.push([cpf, row[C] || "", row[K] || "", row[G] || "", row[S] || "", _numBR(row[D]), row[AB] || "", _numBR(row[AC])]);
     }
     if (out.length < 2) return { sucesso: false, erro: "Nenhuma linha com CPF/CNPJ encontrada (confira o layout/colunas do arquivo)." };
 
@@ -1401,9 +1454,11 @@ function buscarCreditoTomado(cpfCnpj) {
     for (let r = 1; r < dados.length; r++) {
       const cpf = _chaveDoc(dados[r][0]);
       if (cpf && cpf === alvo) {
-        const vf = _numBR(dados[r][4]);            // valor financiado (bruto)
-        const lim = _numBR(dados[r][6]);           // limite custeio disponível
-        const aliqPct = _numBR(dados[r][5]);       // alíquota ProAgro (% a somar)
+        // Colunas: 0 CPF, 1 Ano Safra, 2 IF, 3 Produto, 4 Atividade,
+        // 5 Valor Financiado, 6 Alíquota ProAgro, 7 Limite Custeio Disp.
+        const vf = _numBR(dados[r][5]);            // valor financiado (bruto)
+        const lim = _numBR(dados[r][7]);           // limite custeio disponível
+        const aliqPct = _numBR(dados[r][6]);       // alíquota ProAgro (% a somar)
         // ProAgro só existe em custeio agrícola: quando há alíquota, ela é
         // somada ao valor financiado para compor o valor já tomado.
         const fator = aliqPct > 0 ? (1 + aliqPct / 100) : 1;
@@ -1412,10 +1467,11 @@ function buscarCreditoTomado(cpfCnpj) {
         if (lim > limiteMax) limiteMax = lim;
         itens.push({
           anoSafra: dados[r][1] || "",
-          produto: dados[r][2] || "",
-          atividade: dados[r][3] || "",
+          ifFin: dados[r][2] || "",
+          produto: dados[r][3] || "",
+          atividade: dados[r][4] || "",
           valorFinanciado: vf,
-          aliquotaProagro: dados[r][5] || "",
+          aliquotaProagro: dados[r][6] || "",
           valorTomado: vfTomado,
           limiteDisponivel: lim
         });
@@ -1424,6 +1480,94 @@ function buscarCreditoTomado(cpfCnpj) {
     return { sucesso: itens.length > 0, itens: itens, totalFinanciado: totalTomado, limiteDisponivel: limiteMax };
   } catch (e) {
     return { sucesso: false, erro: e.toString(), itens: [] };
+  }
+}
+
+// ============ CHECK-LIST DE DOCUMENTOS POR LINHA ============
+
+/**
+ * Extrai a relação de documentos de um arquivo .doc/.docx (texto por
+ * parágrafo) ou .xls/.xlsx/.csv (1ª célula não vazia de cada linha).
+ */
+function _arquivoParaTexto(blob, filename) {
+  const nome = String(filename || blob.getName() || "").toLowerCase();
+  if (/\.(xls|xlsx|csv)$/.test(nome)) {
+    const valores = _xlsxParaValores(blob);
+    const itens = [];
+    for (let r = 0; r < valores.length; r++) {
+      const row = valores[r];
+      for (let c = 0; c < row.length; c++) {
+        const v = String(row[c] || "").trim();
+        if (v) { itens.push(v); break; }
+      }
+    }
+    return itens.join("\n");
+  }
+  // .doc / .docx -> Google Doc
+  const fileId = _uploadConvert(blob, "application/vnd.google-apps.document");
+  try {
+    return DocumentApp.openById(fileId).getBody().getText();
+  } finally {
+    try { DriveApp.getFileById(fileId).setTrashed(true); } catch (e) {}
+  }
+}
+
+function _salvarChecklist(nome, texto) {
+  let dados = SHEET_CHECKLIST.getDataRange().getValues();
+  if (dados.length === 0 || String(dados[0][0]).trim() !== "Nome Linha") {
+    SHEET_CHECKLIST.clear();
+    SHEET_CHECKLIST.appendRow(["Nome Linha", "Documentos"]);
+    SHEET_CHECKLIST.getRange(1, 1, 1, 2).setFontWeight("bold").setBackground("#005c46").setFontColor("white");
+    dados = SHEET_CHECKLIST.getDataRange().getValues();
+  }
+  for (let i = 1; i < dados.length; i++) {
+    if (String(dados[i][0]).trim() === String(nome).trim()) {
+      SHEET_CHECKLIST.getRange(i + 1, 2).setValue(texto);
+      return;
+    }
+  }
+  SHEET_CHECKLIST.appendRow([nome, texto]);
+}
+
+/**
+ * Recebe o upload (arquivo + idLinha) e grava a relação de documentos da
+ * linha (chaveada pelo nome da linha, estável entre atualizações da base).
+ */
+function salvarChecklistDocs(form) {
+  try {
+    const blob = form && form.arquivo;
+    const idLinha = form && form.idLinha;
+    if (!blob) return { sucesso: false, erro: "Nenhum arquivo recebido." };
+    if (!idLinha) return { sucesso: false, erro: "Linha não informada." };
+
+    const linha = obterLinhaCompleta(idLinha);
+    const nome = linha && linha["Nome Linha"];
+    if (!nome) return { sucesso: false, erro: "Linha não encontrada." };
+
+    const texto = _arquivoParaTexto(blob, blob.getName());
+    if (!texto || !texto.trim()) return { sucesso: false, erro: "Não foi possível extrair documentos do arquivo." };
+
+    _salvarChecklist(nome, texto);
+    const qtd = texto.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(function (s) { return s; }).length;
+    return { sucesso: true, nome: nome, qtd: qtd };
+  } catch (e) {
+    Logger.log("Erro em salvarChecklistDocs: " + e.toString());
+    return { sucesso: false, erro: e.toString() };
+  }
+}
+
+function obterChecklistDocs(nomeLinha) {
+  try {
+    if (!nomeLinha) return [];
+    const dados = SHEET_CHECKLIST.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === String(nomeLinha).trim()) {
+        return String(dados[i][1] || "").split(/\r?\n/).map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+      }
+    }
+    return [];
+  } catch (e) {
+    return [];
   }
 }
 
@@ -1437,6 +1581,7 @@ function obterHTML() {
   const dataAtualizacao = new Date().toLocaleDateString('pt-BR');
   const linkConsulta = obterLinkConsulta();
   const ehAdmin = usuarioEhAdmin();
+  const limitesEnq = obterLimitesEnquadramento();
   return HtmlService.createHtmlOutput(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -1611,6 +1756,16 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <button type="button" onclick="window.salvarLinkConsulta()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Link</button>
 </div>
 <div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">💰 Limites de Custeio por Enquadramento</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Usados para calcular o Limite Custeio Disponível do associado. DEMAIS não tem limite máximo.</small>
+<div class="grid-2">
+<div class="form-group" style="margin-bottom: 10px;"><label>PRONAF (R$)</label><input type="number" id="limitePronafInput" placeholder="250000"></div>
+<div class="form-group" style="margin-bottom: 10px;"><label>PRONAMP (R$)</label><input type="number" id="limitePronampInput" placeholder="1500000"></div>
+</div>
+<button type="button" onclick="window.salvarLimitesEnq()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Limites</button>
+<div id="limitesEnqStatus" style="margin-top: 8px;"></div>
+</div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
 <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">📤 Atualizar base de linhas com o arquivo da Cresol (.docx)</label>
 <small style="color: #666; display: block; margin-bottom: 10px;">Envie o documento oficial mais recente. O sistema lê as modalidades e mostra uma <strong>pré-visualização</strong> para você escolher quais linhas incluir antes de substituir a base (com backup automático).</small>
 <form id="formUploadCresol">
@@ -1651,6 +1806,7 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <script>
 window.LINK_CONSULTA = '${linkConsulta}';
 window.EH_ADMIN = ${ehAdmin};
+window.LIMITES_ENQ = { pronaf: ${limitesEnq.pronaf}, pronamp: ${limitesEnq.pronamp} };
 
 // Controle de acesso: oculta a aba Administrativo para não autorizados
 (function() {
@@ -1682,7 +1838,66 @@ window.mudarAba = function(event, abaId) {
     window.carregarLinkConsulta();
     window.carregarConfigBase();
     window.carregarEmailsAdmin();
+    window.carregarLimitesEnq();
   }
+};
+
+window.carregarLimitesEnq = function() {
+  const p = document.getElementById('limitePronafInput');
+  const pm = document.getElementById('limitePronampInput');
+  if (p && window.LIMITES_ENQ) p.value = window.LIMITES_ENQ.pronaf;
+  if (pm && window.LIMITES_ENQ) pm.value = window.LIMITES_ENQ.pronamp;
+};
+
+window.salvarLimitesEnq = function() {
+  const pronaf = parseFloat(document.getElementById('limitePronafInput').value) || 0;
+  const pronamp = parseFloat(document.getElementById('limitePronampInput').value) || 0;
+  const st = document.getElementById('limitesEnqStatus');
+  google.script.run
+    .withSuccessHandler(function() {
+      window.LIMITES_ENQ = { pronaf: pronaf, pronamp: pronamp };
+      st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ Limites salvos.</span>';
+    })
+    .withFailureHandler(function(e) { st.innerHTML = '<span style="color:red; font-size:12px;">✕ ' + e + '</span>'; })
+    .salvarLimitesEnquadramento(pronaf, pronamp);
+};
+
+window.abrirUploadDocs = function(idLinha, nome) {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;';
+  modal.id = 'modalDocs';
+  modal.innerHTML =
+    '<div style="background:white; padding:28px; border-radius:10px; max-width:520px; width:92%;">' +
+    '<h3 style="color:#005c46; margin-bottom:6px;">📋 Documentos da Linha</h3>' +
+    '<p style="color:#b3590f; font-size:13px; margin-bottom:14px;">' + nome + '</p>' +
+    '<small style="color:#666; display:block; margin-bottom:10px;">Envie um arquivo .doc, .docx, .xls ou .xlsx com a relação de documentos (um por linha/célula). Substitui a relação anterior desta linha.</small>' +
+    '<form id="formDocs"><input type="hidden" name="idLinha" value="' + idLinha + '"><input type="file" name="arquivo" id="arquivoDocs" accept=".doc,.docx,.xls,.xlsx" style="margin-bottom:10px;"></form>' +
+    '<div id="docsStatus" style="margin-bottom:10px;"></div>' +
+    '<div style="display:flex; gap:10px;">' +
+    '<button onclick="window.enviarDocs()" style="background:#f58220; padding:8px 16px; font-size:13px;">⬆️ Enviar</button>' +
+    '<button onclick="document.getElementById(' + "'" + 'modalDocs' + "'" + ').remove();" style="background:#6c757d; padding:8px 16px; font-size:13px;">Fechar</button>' +
+    '</div></div>';
+  document.body.appendChild(modal);
+};
+
+window.enviarDocs = function() {
+  const input = document.getElementById('arquivoDocs');
+  const st = document.getElementById('docsStatus');
+  if (!input.files || !input.files.length) {
+    st.innerHTML = '<span style="color:#a4282b; font-size:12px;">Selecione um arquivo.</span>';
+    return;
+  }
+  st.innerHTML = '<span style="color:#666; font-size:12px;">⏳ Enviando e lendo o arquivo...</span>';
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp && resp.sucesso) {
+        st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ ' + resp.qtd + ' documento(s) salvos para ' + window.escaparHtml(resp.nome) + '.</span>';
+      } else {
+        st.innerHTML = '<span style="color:#a4282b; font-size:12px;">✕ ' + (resp ? resp.erro : 'erro') + '</span>';
+      }
+    })
+    .withFailureHandler(function(e) { st.innerHTML = '<span style="color:red; font-size:12px;">✕ ' + e + '</span>'; })
+    .salvarChecklistDocs(document.getElementById('formDocs'));
 };
 
 window.carregarEmailsAdmin = function() {
@@ -2076,11 +2291,28 @@ window.carregarCreditoTomado = function(cpf) {
             '<td style="padding:4px 8px;">' + window.escaparHtml(it.produto) + '</td>' +
             '<td style="padding:4px 8px;">' + window.escaparHtml(it.atividade) + '</td>' +
             '<td style="padding:4px 8px; text-align:center;">' + window.escaparHtml(String(it.anoSafra)) + '</td>' +
+            '<td style="padding:4px 8px;">' + window.escaparHtml(String(it.ifFin || '')) + '</td>' +
             '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.valorFinanciado) + '</td>' +
             '<td style="padding:4px 8px; text-align:center;">' + (aliq ? window.escaparHtml(aliq) : '—') + '</td>' +
-            '<td style="padding:4px 8px; text-align:right;"><strong>R$ ' + window.formatarMoeda(it.valorTomado) + '</strong></td>' +
-            '<td style="padding:4px 8px; text-align:right;">R$ ' + window.formatarMoeda(it.limiteDisponivel) + '</td></tr>';
+            '<td style="padding:4px 8px; text-align:right;"><strong>R$ ' + window.formatarMoeda(it.valorTomado) + '</strong></td></tr>';
         });
+
+        // Limite por enquadramento - já tomado = limite custeio disponível
+        const enq = document.getElementById('enquadramento').dataset.value || '';
+        let limiteEnq = null;
+        if (enq === 'pronaf') limiteEnq = window.LIMITES_ENQ.pronaf;
+        else if (enq === 'pronamp') limiteEnq = window.LIMITES_ENQ.pronamp;
+        let limiteTxt;
+        if (!enq) {
+          limiteTxt = '<em>informe a renda/enquadramento para calcular</em>';
+        } else if (limiteEnq === null) {
+          limiteTxt = '<strong>Sem limite máximo</strong> (enquadramento DEMAIS)';
+        } else {
+          const disp = Math.max(0, limiteEnq - resp.totalFinanciado);
+          limiteTxt = '<strong>R$ ' + window.formatarMoeda(disp) + '</strong> ' +
+            '<span style="color:#666;">(limite R$ ' + window.formatarMoeda(limiteEnq) + ' − já tomado R$ ' + window.formatarMoeda(resp.totalFinanciado) + ')</span>';
+        }
+
         box.innerHTML =
           '<div style="background:#fff8ee; border:1px solid #f3c98b; border-left:4px solid #f58220; padding:12px; border-radius:6px;">' +
           '<strong style="color:#b3590f;">💳 Crédito já tomado (base importada)</strong>' +
@@ -2089,13 +2321,13 @@ window.carregarCreditoTomado = function(cpf) {
           '<th style="padding:4px 8px; text-align:left;">Produto/Finalidade</th>' +
           '<th style="padding:4px 8px; text-align:left;">Atividade</th>' +
           '<th style="padding:4px 8px;">Safra</th>' +
+          '<th style="padding:4px 8px; text-align:left;">IF Fin.</th>' +
           '<th style="padding:4px 8px;">Valor financiado</th>' +
           '<th style="padding:4px 8px;">Alíq. ProAgro</th>' +
-          '<th style="padding:4px 8px;">Valor já tomado</th>' +
-          '<th style="padding:4px 8px;">Limite custeio disp.</th></tr></thead>' +
+          '<th style="padding:4px 8px;">Valor já tomado</th></tr></thead>' +
           '<tbody>' + linhas + '</tbody></table></div>' +
           '<p style="margin-top:8px; font-size:13px;"><strong>Total já tomado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
-          ' &nbsp;|&nbsp; <strong>Limite custeio disponível:</strong> R$ ' + window.formatarMoeda(resp.limiteDisponivel) + '</p>' +
+          ' &nbsp;|&nbsp; <strong>Limite Custeio Disponível:</strong> ' + limiteTxt + '</p>' +
           '<small style="color:#666;">Valor já tomado = valor financiado mais a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
       } else {
         box.innerHTML = '<p style="color:#888; font-size:12px;">Sem registros de crédito tomado para este CPF/CNPJ na base.</p>';
@@ -2138,6 +2370,7 @@ window.buscar = function() {
 
 window.mostrarResultados = function(linhas) {
   document.getElementById('loading').style.display = 'none';
+  window.resultadosBusca = linhas || [];
   let html = '<h2 style="margin-bottom: 20px; color: #005c46;">Linhas Disponíveis (' + linhas.length + ')</h2>';
 
   const valorTomado = parseFloat(document.getElementById('valorTomado').value) || 0;
@@ -2150,11 +2383,12 @@ window.mostrarResultados = function(linhas) {
   if (linhas.length === 0) {
     html += '<div class="alert alert-info">Nenhuma linha encontrada. Ajuste os parâmetros' + (valorTomado > 0 ? ' (pode não haver linha com limite disponível para o valor já tomado)' : '') + '.</div>';
   } else {
-    linhas.forEach(linha => {
+    linhas.forEach((linha, idx) => {
       html += '<div class="linha-card"><h3>' + linha.nome + '</h3>';
       html += '<p style="font-size: 12px; color: #999;">Instituição: ' + linha.orgao + '</p>';
       html += '<div class="linha-info">';
-      html += '<div class="info-item"><span class="info-label">Taxa:</span><span class="info-value">' + linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.</span></div>';
+      const taxaTxt = (linha.taxaDescricao && String(linha.taxaDescricao).trim()) ? linha.taxaDescricao : (linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.');
+      html += '<div class="info-item"><span class="info-label">Taxa:</span><span class="info-value">' + taxaTxt + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Prazo:</span><span class="info-value">Até ' + linha.prazo + ' meses</span></div>';
       html += '<div class="info-item"><span class="info-label">Carência:</span><span class="info-value">' + linha.carencia + ' meses</span></div>';
       html += '<div class="info-item"><span class="info-label">Limite:</span><span class="info-value">R$ ' + window.formatarMoeda(linha.limiteMin) + ' a R$ ' + window.formatarMoeda(linha.limiteMax) + '</span></div>';
@@ -2197,8 +2431,7 @@ window.mostrarResultados = function(linhas) {
           '</div>';
       }
       html += '<div style="margin-top: 15px; display: flex; gap: 10px;">';
-      html += '<button onclick="window.abrirSimulador(' + "'" + linha.nome + "'" + ', ' + linha.taxaMin + ', ' + linha.prazo + ', ' + linha.carencia + ')" style="background: #005c46; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💰 Simular Parcelas</button>';
-      html += '<button onclick="window.exportarPDF()" style="background: #f58220; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📄 Exportar PDF</button>';
+      html += '<button onclick="window.abrirChecklist(' + idx + ')" style="background: #005c46; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📋 Check-List de Documentos</button>';
       html += '</div></div>';
     });
   }
@@ -2206,169 +2439,68 @@ window.mostrarResultados = function(linhas) {
   document.getElementById('resultado').classList.add('visible');
 };
 
-window.abrirSimulador = function(nomeLinha, taxaMin, prazo, carencia) {
+window.abrirChecklist = function(idx) {
+  const linha = (window.resultadosBusca || [])[idx];
+  if (!linha) return;
+  google.script.run
+    .withSuccessHandler(function(docs) { window._renderChecklist(linha, docs || []); })
+    .withFailureHandler(function() { window._renderChecklist(linha, []); })
+    .obterChecklistDocs(linha.nome);
+};
+
+window._renderChecklist = function(linha, docs) {
+  const e = window.escaparHtml;
+  let detalhes = '<div style="margin-bottom:15px; font-size:13px;">' +
+    '<p style="margin:4px 0;"><strong>Instituição:</strong> ' + e(linha.orgao) + '</p>' +
+    '<p style="margin:4px 0;"><strong>Taxa:</strong> ' + ((linha.taxaDescricao && String(linha.taxaDescricao).trim()) ? e(linha.taxaDescricao) : (linha.taxaMin + '% - ' + linha.taxaMax + '% a.a.')) + '</p>' +
+    '<p style="margin:4px 0;"><strong>Prazo:</strong> até ' + linha.prazo + ' meses &nbsp;|&nbsp; <strong>Carência:</strong> ' + linha.carencia + ' meses</p>' +
+    '<p style="margin:4px 0;"><strong>Limite:</strong> R$ ' + window.formatarMoeda(linha.limiteMin) + ' a R$ ' + window.formatarMoeda(linha.limiteMax) + '</p>';
+  if (linha.itensFinanciaveis) detalhes += '<p style="margin:4px 0;"><strong>O que financia:</strong> ' + e(linha.itensFinanciaveis) + '</p>';
+  if (linha.culturas) detalhes += '<p style="margin:4px 0;"><strong>Culturas/atividades:</strong> ' + e(linha.culturas) + '</p>';
+  if (linha.requisitos) detalhes += '<p style="margin:4px 0;"><strong>Requisitos:</strong> ' + e(linha.requisitos) + '</p>';
+  detalhes += '</div>';
+
+  let lista = docs;
+  if (!lista || !lista.length) {
+    lista = String(linha.documentos || '').split(/[;,]/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
+  }
+  let docsHtml;
+  if (lista.length) {
+    docsHtml = '<ul style="margin:8px 0 0 0; padding:0; list-style:none;">' +
+      lista.map(function(d){ return '<li style="padding:5px 0; border-bottom:1px solid #eee; font-size:13px;">☐ ' + e(d) + '</li>'; }).join('') +
+      '</ul>';
+  } else {
+    docsHtml = '<p style="color:#888; font-size:13px;">Nenhuma relação de documentos cadastrada para esta linha. Cadastre na aba Administrativo (botão Documentos).</p>';
+  }
+
   const modal = document.createElement('div');
-  modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;';
-  modal.id = 'modalSimulador';
-
-  let html = '<div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">' +
-    '<h3 style="margin-bottom: 20px; color: #005c46;">Simulador de Parcelas</h3>' +
-    '<p style="color: #666; margin-bottom: 15px;"><strong>Linha:</strong> ' + nomeLinha + '</p>' +
-    '<p style="color: #666; margin-bottom: 15px;"><strong>Taxa:</strong> ' + taxaMin + '% a.a. | <strong>Prazo:</strong> até ' + prazo + ' meses</p>' +
-    '<div style="margin-bottom: 15px;">' +
-    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Valor do Crédito (R$)</label>' +
-    '<input type="number" id="sim_valor" placeholder="100000" step="1000" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
+  modal.style.cssText = 'position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:9999;';
+  modal.id = 'modalChecklist';
+  modal.innerHTML =
+    '<div style="background:white; padding:30px; border-radius:10px; max-width:640px; width:92%; max-height:85vh; overflow-y:auto;">' +
+    '<div id="checklistPrintavel">' +
+    '<h3 style="color:#005c46; margin-bottom:6px;">📋 Check-List de Documentos</h3>' +
+    '<h4 style="color:#b3590f; margin-bottom:14px;">' + e(linha.nome) + '</h4>' +
+    detalhes +
+    '<div style="background:#eef6ee; border-left:4px solid #28a745; padding:12px 14px; border-radius:4px;">' +
+    '<strong style="color:#1f6b1f;">Documentos necessários para encaminhamento:</strong>' + docsHtml + '</div>' +
     '</div>' +
-    '<div style="margin-bottom: 15px;">' +
-    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Prazo Total (meses)</label>' +
-    '<input type="number" id="sim_prazo" value="' + prazo + '" min="1" max="' + prazo + '" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
-    '</div>' +
-    '<div style="margin-bottom: 15px;">' +
-    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Periodicidade das Parcelas</label>' +
-    '<select id="sim_periodicidade" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
-    '<option value="12" selected>Anual (típico no crédito rural)</option>' +
-    '<option value="6">Semestral</option>' +
-    '<option value="3">Trimestral</option>' +
-    '<option value="1">Mensal</option>' +
-    '</select>' +
-    '</div>' +
-    '<div style="margin-bottom: 15px;">' +
-    '<label style="display: block; font-weight: 600; margin-bottom: 5px;">Taxa Anual (%)</label>' +
-    '<input type="number" id="sim_taxa" value="' + taxaMin + '" step="0.1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">' +
-    '</div>' +
-    '<button onclick="window.calcularParcelas()" style="width: 100%; background: #28a745; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-bottom: 15px;">Calcular</button>' +
-    '<div id="resultadoSimulador"></div>' +
-    '<button onclick="document.getElementById(' + "'" + 'modalSimulador' + "'" + ').remove();" style="width: 100%; background: #6c757d; color: white; padding: 10px; border: none; border-radius: 4px; cursor: pointer;">Fechar</button>' +
-    '</div>';
-
-  modal.innerHTML = html;
+    '<div style="margin-top:18px; display:flex; gap:10px;">' +
+    '<button onclick="window.imprimirChecklist()" style="background:#005c46; padding:10px 18px; font-size:13px;">🖨️ Imprimir / Salvar</button>' +
+    '<button onclick="document.getElementById(' + "'" + 'modalChecklist' + "'" + ').remove();" style="background:#6c757d; padding:10px 18px; font-size:13px;">Fechar</button>' +
+    '</div></div>';
   document.body.appendChild(modal);
 };
 
-window.calcularParcelas = function() {
-  const valor = parseFloat(document.getElementById('sim_valor').value);
-  const prazo = parseInt(document.getElementById('sim_prazo').value);
-  const taxa = parseFloat(document.getElementById('sim_taxa').value);
-  const periodicidade = parseInt(document.getElementById('sim_periodicidade').value) || 12;
-
-  if (!valor || valor <= 0) {
-    alert('Digite um valor de crédito válido');
-    return;
-  }
-  if (!prazo || prazo <= 0) {
-    alert('Digite um prazo válido');
-    return;
-  }
-
-  // Quantidade de parcelas = prazo total dividido pela periodicidade
-  const numParcelas = Math.max(1, Math.floor(prazo / periodicidade));
-
-  // Taxa nominal do período (ex: anual = taxa/100; mensal = taxa/100/12)
-  const taxaPeriodo = (taxa / 100) * (periodicidade / 12);
-
-  let parcela;
-  if (taxaPeriodo === 0) {
-    parcela = valor / numParcelas;
-  } else {
-    const fator = Math.pow(1 + taxaPeriodo, numParcelas);
-    parcela = (valor * taxaPeriodo * fator) / (fator - 1);
-  }
-
-  const totalPago = parcela * numParcelas;
-  const totalJuros = totalPago - valor;
-
-  const rotuloPeriodo = { 1: 'mensais', 3: 'trimestrais', 6: 'semestrais', 12: 'anuais' }[periodicidade] || '';
-
-  let html = '<div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-top: 15px;">' +
-    '<h4 style="color: #005c46; margin-bottom: 10px;">Resultado:</h4>' +
-    '<p><strong>Valor do Crédito:</strong> R$ ' + window.formatarMoeda(valor) + '</p>' +
-    '<p><strong>Quantidade de Parcelas:</strong> ' + numParcelas + ' parcela(s) ' + rotuloPeriodo + '</p>' +
-    '<p><strong>Valor de Cada Parcela:</strong> R$ ' + window.formatarMoeda(parcela) + '</p>' +
-    '<p><strong>Total de Juros:</strong> R$ ' + window.formatarMoeda(totalJuros) + '</p>' +
-    '<p><strong>Valor Total a Pagar:</strong> R$ ' + window.formatarMoeda(totalPago) + '</p>' +
-    '<p style="color: #666; font-size: 12px; margin-top: 10px;"><em>*Simulação aproximada (Tabela Price), sem considerar carência, seguros ou outras taxas.</em></p>' +
-    '</div>';
-
-  document.getElementById('resultadoSimulador').innerHTML = html;
-};
-
-window.exportarPDF = function() {
-  const resultadoDiv = document.getElementById('resultadoConteudo');
-  if (!resultadoDiv || resultadoDiv.innerHTML.trim() === '') {
-    alert('Nenhum resultado para exportar. Realize uma busca primeiro.');
-    return;
-  }
-
-  const conteudo = resultadoDiv.innerHTML;
-  const dataAtual = new Date().toLocaleDateString('pt-BR');
-  const horaAtual = new Date().toLocaleTimeString('pt-BR');
-
-  const htmlPDF = '<!DOCTYPE html>' +
-    '<html lang="pt-BR">' +
-    '<head>' +
-    '<meta charset="UTF-8">' +
-    '<title>Relatório de Crédito Rural</title>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">' +
-    '<style>' +
-    '* { margin: 0; padding: 0; box-sizing: border-box; }' +
-    'body { font-family: "Roboto", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; }' +
-    '.header { background: #005c46; color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; page-break-after: avoid; }' +
-    '.header h1 { font-size: 28px; margin-bottom: 10px; }' +
-    '.header p { font-size: 14px; opacity: 0.9; }' +
-    '.meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; font-size: 13px; }' +
-    '.meta-item { background: rgba(255,255,255,0.12); padding: 8px 12px; border-radius: 4px; }' +
-    '.content { margin-top: 20px; }' +
-    '.linha-card { background: white; border: 1px solid #ddd; border-left: 4px solid #f58220; border-radius: 5px; padding: 20px; margin-bottom: 20px; page-break-inside: avoid; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }' +
-    '.linha-card h3 { color: #005c46; margin-bottom: 10px; font-size: 18px; border-bottom: 2px solid #005c46; padding-bottom: 8px; }' +
-    '.linha-card p { margin: 8px 0; font-size: 13px; color: #666; }' +
-    '.linha-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }' +
-    '.info-item { background: #f9f9f9; padding: 10px; border-radius: 4px; font-size: 13px; }' +
-    '.info-label { font-weight: 600; color: #005c46; display: block; margin-bottom: 4px; }' +
-    '.info-value { color: #333; font-size: 13px; }' +
-    '.itens-financiaveis { margin-top: 12px; background: #eef6ee !important; border-left: 4px solid #28a745 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
-    '.itens-financiaveis span { font-weight: 600; color: #1f6b1f; font-size: 13px; display: block; margin-bottom: 4px; }' +
-    '.itens-financiaveis div { color: #333; font-size: 13px; }' +
-    '.culturas-financiadas { margin-top: 8px; background: #fdf2e6 !important; border-left: 4px solid #f58220 !important; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
-    '.culturas-financiadas span { font-weight: 600; color: #b3590f; font-size: 13px; display: block; margin-bottom: 4px; }' +
-    '.culturas-financiadas div { color: #333; font-size: 13px; }' +
-    '.limite-disponivel { margin-top: 8px; padding: 12px 14px; border-radius: 4px; page-break-inside: avoid; }' +
-    '.limite-disponivel span { font-size: 13px; display: block; margin-bottom: 4px; }' +
-    '.limite-disponivel div { color: #333; font-size: 13px; }' +
-    '.footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; text-align: center; font-size: 12px; color: #999; page-break-before: avoid; }' +
-    '.alert { background: #e8f4f8; color: #0c5460; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #0c5460; }' +
-    '@media print { body { padding: 0; } .header { margin-bottom: 20px; } .linha-card { margin-bottom: 15px; } @page { margin: 15mm; } }' +
-    '</style>' +
-    '</head>' +
-    '<body>' +
-    '<div class="header">' +
-    '<h1>🌾 Relatório de Crédito Rural - CRESOL</h1>' +
-    '<p>Consulta de Linhas Disponíveis para Operações Rurais</p>' +
-    '<div class="meta">' +
-    '<div class="meta-item"><strong>Data:</strong> ' + dataAtual + '</div>' +
-    '<div class="meta-item"><strong>Hora:</strong> ' + horaAtual + '</div>' +
-    '</div>' +
-    '</div>' +
-    '<div class="content">' +
-    '<div class="alert">' +
-    '<strong>ℹ️ Informações Importantes:</strong> Este relatório apresenta as linhas de crédito disponíveis conforme os critérios de busca. ' +
-    'Para contratar um crédito, entre em contato com a agência da CRESOL mais próxima com toda a documentação necessária.' +
-    '</div>' +
-    conteudo +
-    '</div>' +
-    '<div class="footer">' +
-    '<p><strong>Sistema de Crédito Rural - CRESOL</strong></p>' +
-    '<p>Relatório gerado automaticamente. As informações contidas neste documento são baseadas no Plano Safra 2025/2026.</p>' +
-    '<p>Para dúvidas, contate: agro@cresol.com.br | Telefone: (54) 3025-2000</p>' +
-    '</div>' +
-    '<scr' + 'ipt>' +
-    'window.onload = function() { setTimeout(function() { window.print(); }, 500); };' +
-    '<\/scr' + 'ipt>' +
-    '</body>' +
-    '</html>';
-
-  const blob = new Blob([htmlPDF], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+window.imprimirChecklist = function() {
+  const conteudo = document.getElementById('checklistPrintavel');
+  if (!conteudo) return;
+  const win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Check-List de Documentos - CRESOL</title>' +
+    '<style>body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#333;line-height:1.5;} h3{color:#005c46;} h4{color:#b3590f;} ul{list-style:none;padding:0;} li{padding:5px 0;border-bottom:1px solid #eee;}</style>' +
+    '</head><body>' + conteudo.innerHTML + '</body></html>');
+  win.document.close();
+  setTimeout(function(){ win.print(); }, 400);
 };
 
 window.linhasCache = [];
@@ -2441,6 +2573,7 @@ window.renderizarListaLinhas = function() {
       '<td style="padding: 10px; text-align: center;">' + badge + '</td>' +
       '<td style="padding: 10px; text-align: center; white-space: nowrap;">' +
       '<button onclick="window.editarLinha(' + "'" + linha.id + "'" + ')" style="background: #005c46; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">✏️ Editar</button>' +
+      '<button onclick="window.abrirUploadDocs(' + "'" + linha.id + "'" + ', ' + "'" + window.escaparHtml(linha.nome).replace(/'/g, "&#39;") + "'" + ')" style="background: #0d6efd; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">📋 Documentos</button>' +
       btnToggle +
       '</td></tr>';
   });
@@ -2477,7 +2610,7 @@ window.abrirFormularioNovaLinha = function() {
     id: '', nome: '', orgao: '', finalidadePrincipal: '', finalidades: '',
     enquadramento: 'Conforme análise', taxaMin: '', taxaMax: '', prazo: '',
     carencia: '', limiteMin: '', limiteMax: '', requisitos: '', documentos: '',
-    status: 'Ativa', observacoes: '', itensFinanciaveis: '', culturas: ''
+    status: 'Ativa', observacoes: '', itensFinanciaveis: '', culturas: '', taxaDescricao: ''
   };
   window.renderizarFormularioLinha(vazia, true);
 };
@@ -2528,6 +2661,7 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
 
   html += '</div>';
 
+  html += area('edit_taxa_desc', 'Taxa (descrição completa - texto livre, ex.: "Porte I-II 6,068% + TR...")', linha.taxaDescricao);
   html += area('edit_itens_financiaveis', 'Itens Financiáveis (o que pode ser financiado)', linha.itensFinanciaveis);
   html += area('edit_culturas', 'Culturas e Atividades Financiadas (custeio - lavouras e pecuária)', linha.culturas);
   html += area('edit_documentos', 'Documentos Necessários', linha.documentos);
@@ -2572,6 +2706,7 @@ window.coletarDadosFormulario = function() {
     observacoes: document.getElementById('edit_observacoes').value,
     itensFinanciaveis: document.getElementById('edit_itens_financiaveis').value,
     culturas: document.getElementById('edit_culturas').value,
+    taxaDescricao: document.getElementById('edit_taxa_desc').value,
     status: document.getElementById('edit_status').value
   };
 };
@@ -2599,6 +2734,7 @@ window.salvarEdicaoLinha = function(idLinha) {
     'Observações': f.observacoes,
     'Itens Financiáveis': f.itensFinanciaveis,
     'Culturas Financiadas': f.culturas,
+    'Taxa (descrição)': f.taxaDescricao,
     'Status (Ativa/Inativa)': f.status
   };
 
