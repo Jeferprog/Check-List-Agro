@@ -220,6 +220,23 @@ function buscarLinhas(parametros) {
       })
       .map(linha => {
         try {
+          const culturasTxt = linha[headers.indexOf("Culturas Financiadas")] || "";
+          let limiteMax = parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0;
+          let limiteMin = parseInt(linha[headers.indexOf("Limite Min (R$)")]) || 0;
+
+          // Limite específico por cultura (ex.: "MILHO (até 25 mil)")
+          let capCulturaValor = 0, capCulturaTipo = "";
+          const cap = _capCultura(parametros.produto, culturasTxt);
+          if (cap) {
+            if (cap.tipo === "max") {
+              if (limiteMax === 0 || cap.valor < limiteMax) limiteMax = cap.valor;
+              capCulturaValor = cap.valor; capCulturaTipo = "max";
+            } else if (cap.tipo === "min") {
+              if (cap.valor > limiteMin) limiteMin = cap.valor;
+              capCulturaValor = cap.valor; capCulturaTipo = "min";
+            }
+          }
+
           return {
             id: linha[headers.indexOf("ID")] || "",
             nome: linha[headers.indexOf("Nome Linha")] || "Sem nome",
@@ -229,15 +246,17 @@ function buscarLinhas(parametros) {
             taxaMax: parseFloat(linha[headers.indexOf("Taxa Máx (%)")]) || 0,
             prazo: parseInt(linha[headers.indexOf("Prazo (meses)")]) || 0,
             carencia: parseInt(linha[headers.indexOf("Carência (meses)")]) || 0,
-            limiteMin: parseInt(linha[headers.indexOf("Limite Min (R$)")]) || 0,
-            limiteMax: parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0,
+            limiteMin: limiteMin,
+            limiteMax: limiteMax,
             requisitos: linha[headers.indexOf("Requisitos")] || "",
             documentos: linha[headers.indexOf("Documentos Necessários")] || "",
             observacoes: linha[headers.indexOf("Observações")] || "",
             itensFinanciaveis: linha[headers.indexOf("Itens Financiáveis")] || "",
-            culturas: linha[headers.indexOf("Culturas Financiadas")] || "",
-            limiteDisponivel: Math.max(0, (parseInt(linha[headers.indexOf("Limite Máx (R$)")]) || 0) - (parametros.valorTomado || 0)),
-            valorTomado: parametros.valorTomado || 0
+            culturas: culturasTxt,
+            limiteDisponivel: Math.max(0, limiteMax - (parametros.valorTomado || 0)),
+            valorTomado: parametros.valorTomado || 0,
+            capCulturaValor: capCulturaValor,
+            capCulturaTipo: capCulturaTipo
           };
         } catch (e) {
           return null;
@@ -371,6 +390,49 @@ function validarProduto(produtoBuscado, linha, headers) {
     return palavras.some(p => textoBusca.includes(p));
   } catch (e) {
     return true;
+  }
+}
+
+function _normalizarTexto(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Converte texto de valor ("25 mil", "25.000", "1,5 mi") em número.
+ */
+function _parseValorTexto(s) {
+  const t = String(s || "").toLowerCase();
+  const m = t.match(/([\d.,]+)/);
+  if (!m) return null;
+  let n = parseFloat(m[1].replace(/\./g, "").replace(",", "."));
+  if (isNaN(n)) return null;
+  if (/milh|\bmi\b/.test(t)) n *= 1000000;
+  else if (/\bmil\b/.test(t)) n *= 1000;
+  return n;
+}
+
+/**
+ * Procura, no texto de culturas, um limite específico para a cultura buscada,
+ * no formato "<cultura> (até X)" (máximo) ou "<cultura> (acima de X)" (mínimo).
+ * Ex.: "MILHO (até 25 mil)" -> { tipo: 'max', valor: 25000 }.
+ */
+function _capCultura(produtoBuscado, culturasTexto) {
+  try {
+    if (!produtoBuscado || !culturasTexto) return null;
+    const termo = _normalizarTexto(produtoBuscado.trim());
+    if (termo.length < 3) return null;
+    const texto = _normalizarTexto(culturasTexto);
+    const termoEsc = termo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    let m = texto.match(new RegExp(termoEsc + "[^,;()]*\\(\\s*ate\\s*([^)]+)\\)"));
+    if (m) { const v = _parseValorTexto(m[1]); if (v) return { tipo: "max", valor: v }; }
+
+    m = texto.match(new RegExp(termoEsc + "[^,;()]*\\(\\s*acima\\s*de\\s*([^)]+)\\)"));
+    if (m) { const v = _parseValorTexto(m[1]); if (v) return { tipo: "min", valor: v }; }
+
+    return null;
+  } catch (e) {
+    return null;
   }
 }
 
@@ -1369,13 +1431,6 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <button type="button" onclick="window.buscarAssociado('manual')" style="background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">🔍 Buscar Associado</button>
 <div id="assocStatus" style="margin-top: 8px;"></div>
 </div>
-<div class="form-group">
-<label>📦 Produto/Finalidade <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional - refina a busca)</span></label>
-<input type="text" id="produto" placeholder="Ex: trator, café, silo, irrigação...">
-<small style="color: #666; display: block; margin-top: 5px;">
-Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deixe em branco para ver todas as linhas do tipo selecionado.
-</small>
-</div>
 <div class="grid-2">
 <div class="form-group">
 <label>💰 Renda Bruta Anual (R$)</label>
@@ -1395,6 +1450,12 @@ Digite uma palavra-chave para filtrar as linhas que mencionam esse produto. Deix
 Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricultura Empresarial
 </small>
 </div>
+<div class="grid-2">
+<div class="form-group">
+<label>📦 Produto/Finalidade <span style="font-weight: 400; color: #888; font-size: 12px;">(opcional)</span></label>
+<input type="text" id="produto" placeholder="Ex: milho, trator, café, silo...">
+<small style="color: #666; display: block; margin-top: 5px;">Palavra-chave para filtrar. Em branco = todas do tipo selecionado.</small>
+</div>
 <div class="form-group">
 <label>🎯 Tipo de Operação</label>
 <select id="finalidade" onchange="window.atualizarProdutosDisponiveis()">
@@ -1410,6 +1471,7 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <option value="sustentabilidade">Sustentabilidade/Carbono</option>
 <option value="cafe">Específico para Café</option>
 </select>
+</div>
 </div>
 <div id="produtosDisponiveis" style="display: none; background: #e6f2ee; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #005c46; font-size: 13px;">
 <strong style="color: #004736;">💡 Produtos financiáveis:</strong>
@@ -1942,6 +2004,12 @@ window.mostrarResultados = function(linhas) {
       html += '<div class="info-item"><span class="info-label">Requisitos:</span><span class="info-value">' + linha.requisitos + '</span></div>';
       html += '<div class="info-item"><span class="info-label">Documentos:</span><span class="info-value">' + linha.documentos + '</span></div>';
       html += '</div>';
+      if (linha.capCulturaValor > 0) {
+        const txt = (linha.capCulturaTipo === 'min')
+          ? 'Para a cultura informada, esta linha financia <strong>acima de R$ ' + window.formatarMoeda(linha.capCulturaValor) + '</strong>.'
+          : 'Para a cultura informada, o limite máximo desta linha é <strong>R$ ' + window.formatarMoeda(linha.capCulturaValor) + '</strong>.';
+        html += '<div style="margin-top: 8px; background: #fff8ee; border-left: 4px solid #f58220; padding: 10px 12px; border-radius: 4px; font-size: 13px; color: #b3590f;">⚠️ ' + txt + '</div>';
+      }
       if (linha.itensFinanciaveis) {
         html += '<div class="itens-financiaveis" style="margin-top: 12px; background: #eef6ee; border-left: 4px solid #28a745; padding: 10px 12px; border-radius: 4px;">' +
           '<span style="font-weight: 600; color: #1f6b1f; font-size: 13px;">✅ O que pode ser financiado:</span>' +
