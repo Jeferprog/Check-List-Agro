@@ -149,7 +149,20 @@ function inicializarSheetLinhas() {
     ["L055", "INVESTIMENTO RECURSOS LIVRES COM REGISTRO NO SICOR", "Cresol", "Investimento", "investimento", "Conforme análise", "9", "9", "120", "0", "0", "0", "Conforme política de crédito da Cresol", "RG, CPF, documentação da propriedade, projeto técnico, comprovantes de renda", "Ativa", new Date(), "Investimento | IOF: IOF complementar | Prazo: Poupança até 10 anos", "Os créditos concedidos com recursos livres podem ter por objeto operações de custeio, de investimento, de comercialização ou de industrialização, envolvendo quaisquer produtos de origem vegetal ou animal, inclusive os obtidos em atividades extrativistas.; Taxas e Encargos:; Taxa de Juros Anual: Poupança: de 9% a 25% a.a.RP: de 12% a 45% a.a.; IOF Complementar: IOF complementar; Limites e Prazos:; Percentual de Financiamento: 100% dos itens financiáveis, conforme projeto/orçamento; Prazo Total: Poupança até 10 anos; Prazo de Carência: Até 12 meses; Condições de Amortização: periodicidade mensal ou anual; Modalidades e Códigos:; Modalidades Colmeia:; POUPANÇA LIVRE 20156; Recursos Próprios com Registro no Sicor 7062; Normas e Regulamentações:; Cresol Empresarial BNDES (BNDES Pequenas Empresas); Objetivo: Investimento; Taxa: BNDES: Spread do BNDES: 1,35% a.a. + Spread da Cresol: de 3% a.a a", ""]
   ];
 
-  linhas.forEach(linha => SHEET_LINHAS.appendRow(linha));
+  // Converte colunas numéricas (taxa/prazo/carência/limite) para NÚMERO,
+  // evitando que decimais com ponto (ex.: "3.5") sejam mal interpretados
+  // pela localidade da planilha (pt-BR usa vírgula).
+  const colsNum = [6, 7, 8, 9, 10, 11]; // taxa min, taxa max, prazo, carência, limite min, limite max
+  const linhasNorm = linhas.map(function (linha) {
+    const c = linha.slice();
+    colsNum.forEach(function (i) {
+      const v = parseFloat(String(c[i]).replace(",", "."));
+      c[i] = isNaN(v) ? 0 : v;
+    });
+    return c;
+  });
+
+  linhasNorm.forEach(linha => SHEET_LINHAS.appendRow(linha));
 
   // Formatar sheet
   SHEET_LINHAS.setColumnWidths(1, 19, 80);
@@ -942,13 +955,17 @@ function _cresolEhRural(nome) {
 }
 
 function _cresolNumTaxa(t) {
-  if (!t) return "0";
+  // Retorna NÚMERO (não texto) para evitar erro de interpretação de
+  // decimal por locale (ex.: "3.5" em planilha pt-BR).
+  if (!t) return 0;
   const m = String(t).match(/(\d+(?:[.,]\d+)?)/);
-  return m ? m[1].replace(",", ".") : "0";
+  if (!m) return 0;
+  const n = parseFloat(m[1].replace(",", "."));
+  return isNaN(n) ? 0 : n;
 }
 
 function _cresolNumLimite(t) {
-  if (!t) return "0";
+  if (!t) return 0;
   const re = /R\$\s*([\d.]+(?:,\d+)?)/g;
   let m, max = 0, achou = false;
   while ((m = re.exec(t))) {
@@ -956,17 +973,17 @@ function _cresolNumLimite(t) {
     const n = parseInt(parseFloat(v), 10);
     if (!isNaN(n)) { achou = true; if (n > max) max = n; }
   }
-  return achou ? String(max) : "0";
+  return achou ? max : 0;
 }
 
 function _cresolPrazoMeses(t) {
-  if (!t) return "0";
+  if (!t) return 0;
   let meses = 0, m;
   const reAnos = /(\d+)\s*anos?/g;
   while ((m = reAnos.exec(t))) { const v = parseInt(m[1], 10) * 12; if (v > meses) meses = v; }
   const reMes = /(\d+)\s*mes/g;
   while ((m = reMes.exec(t))) { const v = parseInt(m[1], 10); if (v > meses) meses = v; }
-  return String(meses);
+  return meses;
 }
 
 function _cresolEnquadramento(pub, nome) {
@@ -1032,8 +1049,8 @@ function _cresolMapear(rec, idNum) {
     _cresolTags(rec.nome, rec.tipo, rec.objetivo),
     _cresolEnquadramento(rec.publico, rec.nome),
     taxa, taxa,
-    _cresolPrazoMeses(rec.prazo), "0",
-    "0", _cresolNumLimite(rec.limite),
+    _cresolPrazoMeses(rec.prazo), 0,
+    0, _cresolNumLimite(rec.limite),
     (rec.requisitos.join("; ")).substring(0, 600) || "Conforme política de crédito da Cresol",
     _cresolDocumentos(rec.publico),
     status, new Date(), _cresolObs(rec),
@@ -2438,18 +2455,24 @@ window.renderizarFormularioLinha = function(linha, novaLinha) {
 };
 
 window.coletarDadosFormulario = function() {
+  // Converte campos numéricos para número (aceitando vírgula ou ponto),
+  // para não gravar texto que a planilha pt-BR interprete errado.
+  const num = function(id) {
+    const v = parseFloat(String(document.getElementById(id).value).replace(',', '.'));
+    return isNaN(v) ? 0 : v;
+  };
   return {
     nome: document.getElementById('edit_nome').value,
     orgao: document.getElementById('edit_orgao').value,
     finalidadePrincipal: document.getElementById('edit_finalidade_principal').value,
     finalidades: document.getElementById('edit_finalidades').value,
     enquadramento: document.getElementById('edit_enquadramento').value,
-    taxaMin: document.getElementById('edit_taxa_min').value,
-    taxaMax: document.getElementById('edit_taxa_max').value,
-    prazo: document.getElementById('edit_prazo').value,
-    carencia: document.getElementById('edit_carencia').value,
-    limiteMin: document.getElementById('edit_limite_min').value,
-    limiteMax: document.getElementById('edit_limite_max').value,
+    taxaMin: num('edit_taxa_min'),
+    taxaMax: num('edit_taxa_max'),
+    prazo: num('edit_prazo'),
+    carencia: num('edit_carencia'),
+    limiteMin: num('edit_limite_min'),
+    limiteMax: num('edit_limite_max'),
     documentos: document.getElementById('edit_documentos').value,
     requisitos: document.getElementById('edit_requisitos').value,
     observacoes: document.getElementById('edit_observacoes').value,
