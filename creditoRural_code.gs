@@ -243,7 +243,15 @@ function buscarLinhas(parametros) {
           return null;
         }
       })
-      .filter(item => item !== null);
+      .filter(item => item !== null)
+      .filter(item => {
+        // Respeita o limite já tomado: oculta linhas cujo teto já foi
+        // atingido pelo valor já tomado pelo associado.
+        if ((parametros.valorTomado || 0) > 0 && item.limiteMax > 0 && item.limiteDisponivel <= 0) {
+          return false;
+        }
+        return true;
+      });
 
     registrarConsulta(parametros, resultado.length);
     return resultado;
@@ -1901,8 +1909,15 @@ window.mostrarResultados = function(linhas) {
   document.getElementById('loading').style.display = 'none';
   let html = '<h2 style="margin-bottom: 20px; color: #005c46;">Linhas Disponíveis (' + linhas.length + ')</h2>';
 
+  const valorTomado = parseFloat(document.getElementById('valorTomado').value) || 0;
+  if (valorTomado > 0) {
+    html += '<div class="alert" style="background:#fff8ee; border-left:4px solid #f58220; color:#b3590f; font-size:13px;">' +
+      'ℹ️ Considerando o valor já tomado de <strong>R$ ' + window.formatarMoeda(valorTomado) + '</strong>: ' +
+      'linhas cujo limite já foi atingido foram <strong>ocultadas</strong>, e as demais mostram o limite ainda disponível.</div>';
+  }
+
   if (linhas.length === 0) {
-    html += '<div class="alert alert-info">Nenhuma linha encontrada. Ajuste os parâmetros.</div>';
+    html += '<div class="alert alert-info">Nenhuma linha encontrada. Ajuste os parâmetros' + (valorTomado > 0 ? ' (pode não haver linha com limite disponível para o valor já tomado)' : '') + '.</div>';
   } else {
     linhas.forEach(linha => {
       html += '<div class="linha-card"><h3>' + linha.nome + '</h3>';
