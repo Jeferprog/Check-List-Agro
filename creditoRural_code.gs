@@ -203,6 +203,13 @@ function buscarLinhas(parametros) {
           const enquadramentoIdx = headers.indexOf("Enquadramento (Renda Min/Max)");
           if (enquadramentoIdx === -1) return false;
 
+          // Regra de grupo: o associado só vê linhas do seu enquadramento
+          // (PRONAF só PRONAF; PRONAMP só PRONAMP; DEMAIS só DEMAIS).
+          if (parametros.enquadramento) {
+            const grupoLinha = _grupoEnquadramentoLinha(linha[headers.indexOf("Nome Linha")], linha[enquadramentoIdx]);
+            if (grupoLinha !== _grupoAssociado(parametros.enquadramento)) return false;
+          }
+
           if (!validarRenda(parametros.renda, linha[enquadramentoIdx])) return false;
 
           const finalidadesIdx = headers.indexOf("Finalidades (tags)");
@@ -434,6 +441,27 @@ function _capCultura(produtoBuscado, culturasTexto) {
   } catch (e) {
     return null;
   }
+}
+
+/**
+ * Classifica a linha em um grupo de enquadramento: 'pronaf', 'pronamp' ou
+ * 'demais'. Usa o nome (PRONAF/PRONAMP) e, em seguida, a faixa de renda.
+ */
+function _grupoEnquadramentoLinha(nome, enqTexto) {
+  const n = String(nome || "").toUpperCase();
+  if (n.indexOf("PRONAF") !== -1) return "pronaf";
+  if (n.indexOf("PRONAMP") !== -1) return "pronamp";
+  const e = String(enqTexto || "").toLowerCase();
+  if (e.indexOf("sem limite") !== -1) return "pronaf";
+  if (e.indexOf("500 mil") !== -1 && (e.indexOf("3.5") !== -1 || e.indexOf("3,5") !== -1)) return "pronamp";
+  return "demais";
+}
+
+/** Converte o enquadramento do associado (form) no grupo da linha. */
+function _grupoAssociado(enquadramento) {
+  if (enquadramento === "pronaf") return "pronaf";
+  if (enquadramento === "pronamp") return "pronamp";
+  return "demais"; // empresarial / demais
 }
 
 function validarFinalidade(finalidadeBuscada, finalidadeLinha) {
@@ -1429,6 +1457,7 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <input type="text" id="nomeAssociado" readonly style="background-color: #f0f0f0;" placeholder="Preenchido automaticamente pela busca">
 </div>
 <button type="button" onclick="window.buscarAssociado('manual')" style="background: none; color: #005c46; border: 1px solid #005c46; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;">🔍 Buscar Associado</button>
+<button type="button" onclick="window.limparConsulta()" style="background: none; color: #6c757d; border: 1px solid #6c757d; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; margin-left: 8px;">🧹 Limpar</button>
 <div id="assocStatus" style="margin-top: 8px;"></div>
 </div>
 <div class="grid-2">
@@ -1863,6 +1892,23 @@ window.atualizarProdutosDisponiveis = function() {
   const produtos = window.produtosPorTipo[tipoOperacao];
   listaProdutos.textContent = produtos.join(' • ');
   produtosDiv.style.display = 'block';
+};
+
+window.limparConsulta = function() {
+  ['conta', 'cpfcnpj', 'nomeAssociado', 'produto', 'renda', 'valorTomado'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const enq = document.getElementById('enquadramento');
+  if (enq) { enq.value = ''; enq.dataset.value = ''; }
+  const fin = document.getElementById('finalidade');
+  if (fin) fin.value = '';
+  const assoc = document.getElementById('assocStatus'); if (assoc) assoc.innerHTML = '';
+  const credito = document.getElementById('creditoTomadoBox'); if (credito) credito.innerHTML = '';
+  const prod = document.getElementById('produtosDisponiveis'); if (prod) prod.style.display = 'none';
+  const res = document.getElementById('resultado'); if (res) res.classList.remove('visible');
+  const resConteudo = document.getElementById('resultadoConteudo'); if (resConteudo) resConteudo.innerHTML = '';
+  document.getElementById('conta').focus();
 };
 
 window.buscarAssociado = function(origem) {
