@@ -1180,13 +1180,22 @@ function _numBR(v) {
 }
 
 /**
+ * Chave de comparação de documento/conta: só dígitos, sem zeros à esquerda.
+ * Resolve o caso da base que perde zeros iniciais de CPF (ex.: digitar
+ * "01234567890" encontra o registro "1234567890").
+ */
+function _chaveDoc(v) {
+  return String(v || "").replace(/\D/g, "").replace(/^0+/, "");
+}
+
+/**
  * Busca um associado na aba Base por conta ou CPF/CNPJ (somente dígitos).
  * vl_anual_fonte_renda_total é a renda MENSAL (apesar do nome) -> anualiza.
  */
 function buscarAssociado(termo) {
   try {
     if (!termo) return { sucesso: false, erro: "Informe a conta ou o CPF/CNPJ." };
-    const alvo = String(termo).replace(/\D/g, "");
+    const alvo = _chaveDoc(termo);
     if (!alvo) return { sucesso: false, erro: "Informe um número válido." };
 
     const dados = SHEET_BASE.getDataRange().getValues();
@@ -1201,8 +1210,8 @@ function buscarAssociado(termo) {
     const iTipo = H.indexOf("ds_pessoa_tipo");
 
     for (let r = 1; r < dados.length; r++) {
-      const cpf = iCpf !== -1 ? String(dados[r][iCpf] || "").replace(/\D/g, "") : "";
-      const conta = iConta !== -1 ? String(dados[r][iConta] || "").replace(/\D/g, "") : "";
+      const cpf = iCpf !== -1 ? _chaveDoc(dados[r][iCpf]) : "";
+      const conta = iConta !== -1 ? _chaveDoc(dados[r][iConta]) : "";
       if ((cpf && cpf === alvo) || (conta && conta === alvo)) {
         const rendaMensal = iRenda !== -1 ? _numBR(dados[r][iRenda]) : 0;
         return {
@@ -1332,21 +1341,22 @@ function processarArquivoCreditoBase(form) {
 function buscarCreditoTomado(cpfCnpj) {
   try {
     if (!cpfCnpj) return { sucesso: false, itens: [] };
-    const alvo = String(cpfCnpj).replace(/\D/g, "");
+    const alvo = _chaveDoc(cpfCnpj);
+    if (!alvo) return { sucesso: false, itens: [] };
     const dados = SHEET_BASE_CREDITO.getDataRange().getValues();
     if (!dados || dados.length < 2) return { sucesso: false, erro: "Base de crédito tomado vazia.", itens: [] };
 
     const itens = [];
     let totalTomado = 0, limiteMax = 0;
     for (let r = 1; r < dados.length; r++) {
-      const cpf = String(dados[r][0] || "").replace(/\D/g, "");
+      const cpf = _chaveDoc(dados[r][0]);
       if (cpf && cpf === alvo) {
         const vf = _numBR(dados[r][4]);            // valor financiado (bruto)
         const lim = _numBR(dados[r][6]);           // limite custeio disponível
-        const aliqPct = _numBR(dados[r][5]);       // alíquota ProAgro (% a descontar)
-        // ProAgro só existe em custeio agrícola: quando há alíquota, o valor
-        // já tomado é o financiado descontado o percentual da alíquota.
-        const fator = aliqPct > 0 ? (1 - aliqPct / 100) : 1;
+        const aliqPct = _numBR(dados[r][5]);       // alíquota ProAgro (% a somar)
+        // ProAgro só existe em custeio agrícola: quando há alíquota, ela é
+        // somada ao valor financiado para compor o valor já tomado.
+        const fator = aliqPct > 0 ? (1 + aliqPct / 100) : 1;
         const vfTomado = vf * fator;
         totalTomado += vfTomado;
         if (lim > limiteMax) limiteMax = lim;
@@ -2002,7 +2012,7 @@ window.carregarCreditoTomado = function(cpf) {
           '<tbody>' + linhas + '</tbody></table></div>' +
           '<p style="margin-top:8px; font-size:13px;"><strong>Total já tomado:</strong> R$ ' + window.formatarMoeda(resp.totalFinanciado) +
           ' &nbsp;|&nbsp; <strong>Limite custeio disponível:</strong> R$ ' + window.formatarMoeda(resp.limiteDisponivel) + '</p>' +
-          '<small style="color:#666;">Valor já tomado = valor financiado menos a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
+          '<small style="color:#666;">Valor já tomado = valor financiado mais a alíquota do ProAgro (somente custeio agrícola). O campo "Valor já tomado na cultura" foi preenchido com o total. Ajuste se necessário.</small></div>';
       } else {
         box.innerHTML = '<p style="color:#888; font-size:12px;">Sem registros de crédito tomado para este CPF/CNPJ na base.</p>';
       }
