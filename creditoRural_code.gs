@@ -1875,7 +1875,7 @@ window.abrirUploadDocs = function(idLinha, nome) {
     '<div style="background:white; padding:28px; border-radius:10px; max-width:520px; width:92%;">' +
     '<h3 style="color:#005c46; margin-bottom:6px;">📋 Documentos da Linha</h3>' +
     '<p style="color:#b3590f; font-size:13px; margin-bottom:14px;">' + nome + '</p>' +
-    '<small style="color:#666; display:block; margin-bottom:10px;">Envie um arquivo .doc, .docx, .xls ou .xlsx com a relação de documentos (um por linha/célula). Substitui a relação anterior desta linha.</small>' +
+    '<small style="color:#666; display:block; margin-bottom:10px;">Envie um arquivo .doc, .docx, .xls ou .xlsx com a relação de documentos (um por linha). Use o prefixo <strong>(P)</strong> para documentos da <strong>pré-contratação</strong> e <strong>(F)</strong> para os da <strong>formalização</strong>. Linhas sem prefixo (ex.: título) são ignoradas. Substitui a relação anterior desta linha.</small>' +
     '<form id="formDocs"><input type="hidden" name="idLinha" value="' + idLinha + '"><input type="file" name="arquivo" id="arquivoDocs" accept=".doc,.docx,.xls,.xlsx" style="margin-bottom:10px;"></form>' +
     '<div id="docsStatus" style="margin-bottom:10px;"></div>' +
     '<div style="display:flex; gap:10px;">' +
@@ -2469,11 +2469,29 @@ window._renderChecklist = function(linha, docs) {
   if (!lista || !lista.length) {
     lista = String(linha.documentos || '').split(/[;,]/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
   }
+
+  // Separa documentos por etapa: (P) pré-contratação, (F) formalização.
+  const pre = [], form = [], outros = [];
+  lista.forEach(function(d) {
+    const t = String(d).trim();
+    if (/^\(\s*P\s*\)/i.test(t)) pre.push(t.replace(/^\(\s*P\s*\)\s*/i, ''));
+    else if (/^\(\s*F\s*\)/i.test(t)) form.push(t.replace(/^\(\s*F\s*\)\s*/i, ''));
+    else outros.push(t);
+  });
+
+  function bloco(titulo, cor, itens) {
+    if (!itens.length) return '';
+    return '<div style="margin-top:10px;"><strong style="color:' + cor + '; font-size:13px;">' + titulo + '</strong>' +
+      '<ul style="margin:6px 0 0 0; padding:0; list-style:none;">' +
+      itens.map(function(d){ return '<li style="padding:5px 0; border-bottom:1px solid #eee; font-size:13px;">☐ ' + e(d) + '</li>'; }).join('') +
+      '</ul></div>';
+  }
+
   let docsHtml;
-  if (lista.length) {
-    docsHtml = '<ul style="margin:8px 0 0 0; padding:0; list-style:none;">' +
-      lista.map(function(d){ return '<li style="padding:5px 0; border-bottom:1px solid #eee; font-size:13px;">☐ ' + e(d) + '</li>'; }).join('') +
-      '</ul>';
+  if (pre.length || form.length) {
+    docsHtml = bloco('📌 Pré-contratação', '#b3590f', pre) + bloco('📝 Formalização', '#1f6b1f', form);
+  } else if (outros.length) {
+    docsHtml = bloco('Documentos necessários', '#1f6b1f', outros);
   } else {
     docsHtml = '<p style="color:#888; font-size:13px;">Nenhuma relação de documentos cadastrada para esta linha. Cadastre na aba Administrativo (botão Documentos).</p>';
   }
@@ -2487,8 +2505,8 @@ window._renderChecklist = function(linha, docs) {
     '<h3 style="color:#005c46; margin-bottom:6px;">📋 Check-List de Documentos</h3>' +
     '<h4 style="color:#b3590f; margin-bottom:14px;">' + e(linha.nome) + '</h4>' +
     detalhes +
-    '<div style="background:#eef6ee; border-left:4px solid #28a745; padding:12px 14px; border-radius:4px;">' +
-    '<strong style="color:#1f6b1f;">Documentos necessários para encaminhamento:</strong>' + docsHtml + '</div>' +
+    '<div style="background:#f5f6f6; border-left:4px solid #28a745; padding:12px 14px; border-radius:4px;">' +
+    docsHtml + '</div>' +
     '</div>' +
     '<div style="margin-top:18px; display:flex; gap:10px;">' +
     '<button onclick="window.imprimirChecklist()" style="background:#005c46; padding:10px 18px; font-size:13px;">🖨️ Imprimir / Salvar</button>' +
