@@ -182,7 +182,8 @@ function inicializarSheetConfig() {
     ["Ano Fiscal", "2025/2026", "text", "Plano Safra atual"],
     ["Contato Suporte", "agro@cresol.com.br", "email", "E-mail para suporte"],
     ["Últimas Linhas Adicionadas", "Pronaf Irrigação", "text", "Informação das novas linhas"],
-    ["Link Consulta Crédito (SICOR/CACR)", "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr", "url", "Link para consulta de crédito já tomado (SICOR/CACR)"]
+    ["Link Consulta Crédito (SICOR/CACR)", "https://www.gov.br/pt-br/servicos/acessar-as-informacoes-de-operacoes-de-credito-rural-cacr", "url", "Link para consulta de crédito já tomado (SICOR/CACR)"],
+    ["E-mails Administradores", "", "lista", "E-mails autorizados a acessar a aba Administrativo (separados por vírgula). Vazio = todos."]
   ];
 
   configs.forEach(config => SHEET_CONFIG.appendRow(config));
@@ -703,6 +704,55 @@ function adicionarLinha(dados) {
 
 // Parâmetro de configuração que guarda o link de consulta (SICOR/CACR)
 const PARAM_LINK_CONSULTA = "Link Consulta Crédito (SICOR/CACR)";
+const PARAM_EMAILS_ADMIN = "E-mails Administradores";
+
+// ---- Controle de acesso à área Administrativa (login corporativo) ----
+
+function obterEmailsAdmin() {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_EMAILS_ADMIN) {
+        return String(dados[i][1] || "")
+          .split(/[;,\n]+/)
+          .map(function (e) { return e.trim().toLowerCase(); })
+          .filter(function (e) { return e; });
+      }
+    }
+    return [];
+  } catch (e) { return []; }
+}
+
+function salvarEmailsAdmin(texto) {
+  try {
+    const dados = SHEET_CONFIG.getDataRange().getValues();
+    for (let i = 1; i < dados.length; i++) {
+      if (String(dados[i][0]).trim() === PARAM_EMAILS_ADMIN) {
+        SHEET_CONFIG.getRange(i + 1, 2).setValue(texto);
+        return { sucesso: true };
+      }
+    }
+    SHEET_CONFIG.appendRow([PARAM_EMAILS_ADMIN, texto, "lista", "E-mails autorizados a acessar a aba Administrativo (separados por vírgula)"]);
+    return { sucesso: true };
+  } catch (e) { return { sucesso: false, erro: e.toString() }; }
+}
+
+function usuarioAtualEmail() {
+  try { return (Session.getActiveUser().getEmail() || "").toLowerCase(); }
+  catch (e) { return ""; }
+}
+
+/**
+ * Indica se o usuário logado pode acessar a área Administrativa.
+ * Se a lista de e-mails ainda não foi configurada, libera (para permitir a
+ * configuração inicial). Configurada, só os e-mails da lista têm acesso.
+ */
+function usuarioEhAdmin() {
+  const lista = obterEmailsAdmin();
+  if (lista.length === 0) return true;
+  const email = usuarioAtualEmail();
+  return !!email && lista.indexOf(email) !== -1;
+}
 
 /**
  * Retorna o link de consulta cadastrado na aba Configurações.
@@ -1386,12 +1436,13 @@ function doGet() {
 function obterHTML() {
   const dataAtualizacao = new Date().toLocaleDateString('pt-BR');
   const linkConsulta = obterLinkConsulta();
+  const ehAdmin = usuarioEhAdmin();
   return HtmlService.createHtmlOutput(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema de Crédito Rural - CRESOL</title>
+<title>Sistema de Consulta de Crédito Rural - CRESOL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -1451,7 +1502,7 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <body>
 <div class="container">
 <div class="header">
-<h1>🌾 Sistema de Crédito Rural</h1>
+<h1>🌾 Sistema de Consulta de Crédito Rural</h1>
 <p>Consultar linhas de crédito para operações rurais - CRESOL</p>
 <span class="header-badge">Plano Safra 2025/2026</span>
 <span class="header-update">Última atualização: ${dataAtualizacao}</span>
@@ -1460,7 +1511,6 @@ table tbody tr:nth-child(even) { background: #f7f8f8; }
 <div class="tabs">
 <button class="tab-btn active" id="btn-consulta" onclick="window.mudarAba(event, 'consulta')">Consultar</button>
 <button class="tab-btn" id="btn-admin" onclick="window.mudarAba(event, 'admin')">Administrativo</button>
-<button class="tab-btn" id="btn-historico" onclick="window.mudarAba(event, 'historico')">Histórico</button>
 </div>
 
 <div id="consulta" class="tab-content active">
@@ -1548,6 +1598,13 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito - editar, incluir e ativar/inativar.
 </div>
 <div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
+<label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">🔐 E-mails com acesso à área Administrativa</label>
+<small style="color: #666; display: block; margin-bottom: 10px;">Separe por vírgula. Somente estes e-mails (login corporativo) verão esta aba. Se ficar vazio, todos têm acesso.</small>
+<input type="text" id="emailsAdminInput" placeholder="fulano@cresol.com.br, ciclano@cresol.com.br" style="margin-bottom: 10px;">
+<button type="button" onclick="window.salvarEmailsAdmin()" style="background: #005c46; padding: 8px 18px; font-size: 13px;">💾 Salvar Acessos</button>
+<div id="emailsAdminStatus" style="margin-top: 8px;"></div>
+</div>
+<div style="margin-bottom: 25px; padding: 18px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafbfb;">
 <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #005c46;">🔗 Link de Consulta de Crédito Tomado (SICOR/CACR)</label>
 <input type="text" id="linkConsultaInput" placeholder="https://..." style="margin-bottom: 10px;">
 <small style="color: #666; display: block; margin-bottom: 10px;">Este link é usado pelo botão "Consultar valor já financiado" na aba Consultar.</small>
@@ -1589,17 +1646,21 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <div id="edicaoConteudo"></div>
 <div id="listaLinhasAdmin"></div>
 </div>
-
-<div id="historico" class="tab-content">
-<div class="alert alert-info">
-<strong>📊 Histórico de Consultas:</strong> Acompanhe todas as buscas realizadas.
-</div>
-<div id="tabelaHistorico"></div>
-</div>
 </div>
 
 <script>
 window.LINK_CONSULTA = '${linkConsulta}';
+window.EH_ADMIN = ${ehAdmin};
+
+// Controle de acesso: oculta a aba Administrativo para não autorizados
+(function() {
+  if (!window.EH_ADMIN) {
+    const btn = document.getElementById('btn-admin');
+    if (btn) btn.style.display = 'none';
+    const admin = document.getElementById('admin');
+    if (admin) admin.parentNode.removeChild(admin);
+  }
+})();
 
 window.abrirConsultaSicor = function() {
   if (window.LINK_CONSULTA && window.LINK_CONSULTA.trim() !== '') {
@@ -1616,12 +1677,35 @@ window.mudarAba = function(event, abaId) {
   event.target.classList.add('active');
 
   if (abaId === 'admin') {
+    if (!window.EH_ADMIN) return;
     window.carregarLinhasAdministrativo();
     window.carregarLinkConsulta();
     window.carregarConfigBase();
-  } else if (abaId === 'historico') {
-    window.carregarHistorico();
+    window.carregarEmailsAdmin();
   }
+};
+
+window.carregarEmailsAdmin = function() {
+  google.script.run
+    .withSuccessHandler(function(lista) {
+      const input = document.getElementById('emailsAdminInput');
+      if (input) input.value = (lista || []).join(', ');
+    })
+    .withFailureHandler(function(e) { console.error(e); })
+    .obterEmailsAdmin();
+};
+
+window.salvarEmailsAdmin = function() {
+  const texto = document.getElementById('emailsAdminInput').value.trim();
+  const st = document.getElementById('emailsAdminStatus');
+  google.script.run
+    .withSuccessHandler(function() {
+      st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ Acessos salvos. Vale para os próximos acessos ao sistema.</span>';
+    })
+    .withFailureHandler(function(error) {
+      st.innerHTML = '<span style="color:red; font-size:12px;">✕ ' + error + '</span>';
+    })
+    .salvarEmailsAdmin(texto);
 };
 
 window.carregarConfigBase = function() {
@@ -2551,40 +2635,6 @@ window.salvarNovaLinha = function() {
       window.notificar('<strong>✕ Erro ao adicionar:</strong><br>' + error, 'erro');
     })
     .adicionarLinha(dados);
-};
-
-window.carregarHistorico = function() {
-  google.script.run
-    .withSuccessHandler(function(historico) {
-      let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px;">' +
-        '<thead style="background: #f5f5f5;">' +
-        '<tr><th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Data</th>' +
-        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Tipo</th>' +
-        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Finalidade</th>' +
-        '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Resultado</th></tr>' +
-        '</thead><tbody>';
-
-      if (!historico || !Array.isArray(historico) || historico.length === 0) {
-        html += '<tr><td colspan="4" style="padding: 20px; text-align: center; color: #999;">Nenhuma consulta registrada ainda</td></tr>';
-      } else {
-        historico.forEach(item => {
-          html += '<tr style="border-bottom: 1px solid #eee;">' +
-            '<td style="padding: 10px;">' + (item[0] || '-') + '</td>' +
-            '<td style="padding: 10px;">' + (item[1] || '-') + '</td>' +
-            '<td style="padding: 10px;">' + (item[2] || '-') + '</td>' +
-            '<td style="padding: 10px;">' + (item[4] || '-') + '</td>' +
-            '</tr>';
-        });
-      }
-
-      html += '</tbody></table>';
-      document.getElementById('tabelaHistorico').innerHTML = html;
-    })
-    .withFailureHandler(function(error) {
-      console.error('Erro ao carregar histórico:', error);
-      document.getElementById('tabelaHistorico').innerHTML = '<p style="color: red;">Erro ao carregar histórico: ' + error + '</p>';
-    })
-    .obterHistorico();
 };
 
 window.formatarMoeda = function(valor) {
