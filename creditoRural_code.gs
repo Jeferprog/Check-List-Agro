@@ -620,12 +620,24 @@ function listarTodasAsLinhas() {
     const headers = dados[0];
     if (!headers) return [];
 
+    // Conjunto de nomes de linha que já possuem Check-List importado
+    const comChecklist = {};
+    try {
+      const dc = SHEET_CHECKLIST.getDataRange().getValues();
+      for (let j = 1; j < dc.length; j++) {
+        const nm = String(dc[j][0] || "").trim();
+        if (nm && String(dc[j][1] || "").trim()) comChecklist[nm] = true;
+      }
+    } catch (e) {}
+
     const resultado = [];
     for (let i = 1; i < dados.length; i++) {
       const linha = dados[i];
+      const nomeLinha = sanitizarValor(linha[headers.indexOf("Nome Linha")]);
       resultado.push({
         id: sanitizarValor(linha[headers.indexOf("ID")]),
-        nome: sanitizarValor(linha[headers.indexOf("Nome Linha")]),
+        nome: nomeLinha,
+        temChecklist: !!comChecklist[String(nomeLinha).trim()],
         orgao: sanitizarValor(linha[headers.indexOf("Órgão/Instituição")]),
         finalidadePrincipal: sanitizarValor(linha[headers.indexOf("Finalidade Principal")]),
         finalidades: sanitizarValor(linha[headers.indexOf("Finalidades (tags)")]),
@@ -1897,6 +1909,7 @@ window.enviarDocs = function() {
     .withSuccessHandler(function(resp) {
       if (resp && resp.sucesso) {
         st.innerHTML = '<span style="color:#1f6b1f; font-size:12px;">✓ ' + resp.qtd + ' documento(s) salvos para ' + window.escaparHtml(resp.nome) + '.</span>';
+        window.carregarLinhasAdministrativo();
       } else {
         st.innerHTML = '<span style="color:#a4282b; font-size:12px;">✕ ' + (resp ? resp.erro : 'erro') + '</span>';
       }
@@ -2470,12 +2483,21 @@ window._renderChecklist = function(linha, docs) {
     lista = String(linha.documentos || '').split(/[;,]/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
   }
 
-  // Separa documentos por etapa: (P) pré-contratação, (F) formalização.
+  // Separa por etapa usando "seção corrente": ao encontrar (P) ou (F), tudo
+  // que vier depois (com ou sem prefixo) pertence àquela etapa, até mudar.
+  // Cobre tanto o formato com prefixo por item quanto por seção.
   const pre = [], form = [], outros = [];
+  let secao = 'outros';
   lista.forEach(function(d) {
-    const t = String(d).trim();
-    if (/^\(\s*P\s*\)/i.test(t)) pre.push(t.replace(/^\(\s*P\s*\)\s*/i, ''));
-    else if (/^\(\s*F\s*\)/i.test(t)) form.push(t.replace(/^\(\s*F\s*\)\s*/i, ''));
+    let t = String(d).trim();
+    if (!t) return;
+    const ehP = /^\(\s*P\s*\)/i.test(t);
+    const ehF = /^\(\s*F\s*\)/i.test(t);
+    if (ehP) { secao = 'pre'; t = t.replace(/^\(\s*P\s*\)\s*[-–]?\s*/i, '').trim(); }
+    else if (ehF) { secao = 'form'; t = t.replace(/^\(\s*F\s*\)\s*[-–]?\s*/i, '').trim(); }
+    if (!t) return; // linha era só o marcador/cabeçalho da seção
+    if (secao === 'pre') pre.push(t);
+    else if (secao === 'form') form.push(t);
     else outros.push(t);
   });
 
@@ -2577,6 +2599,7 @@ window.renderizarListaLinhas = function() {
     '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Nome</th>' +
     '<th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">Instituição</th>' +
     '<th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">Status</th>' +
+    '<th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">Check-List</th>' +
     '<th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">Ações</th>' +
     '</tr></thead><tbody>';
 
@@ -2590,10 +2613,15 @@ window.renderizarListaLinhas = function() {
       ? '<button onclick="window.alternarStatusLinha(' + "'" + linha.id + "'" + ', false)" style="background: #ffc107; color: #333; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">⏸ Inativar</button>'
       : '<button onclick="window.alternarStatusLinha(' + "'" + linha.id + "'" + ', true)" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">▶ Ativar</button>';
 
+    const badgeChk = linha.temChecklist
+      ? '<span style="background: #d4edda; color: #155724; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">✓ Importado</span>'
+      : '<span style="background: #f1f1f1; color: #999; padding: 3px 10px; border-radius: 12px; font-size: 11px;">— pendente</span>';
+
     html += '<tr style="border-bottom: 1px solid #eee;">' +
       '<td style="padding: 10px;">' + window.escaparHtml(linha.nome) + '</td>' +
       '<td style="padding: 10px; color: #666;">' + window.escaparHtml(linha.orgao) + '</td>' +
       '<td style="padding: 10px; text-align: center;">' + badge + '</td>' +
+      '<td style="padding: 10px; text-align: center;">' + badgeChk + '</td>' +
       '<td style="padding: 10px; text-align: center; white-space: nowrap;">' +
       '<button onclick="window.editarLinha(' + "'" + linha.id + "'" + ')" style="background: #005c46; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">✏️ Editar</button>' +
       '<button onclick="window.abrirUploadDocs(' + "'" + linha.id + "'" + ', ' + "'" + window.escaparHtml(linha.nome).replace(/'/g, "&#39;") + "'" + ')" style="background: #0d6efd; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">📋 Documentos</button>' +
