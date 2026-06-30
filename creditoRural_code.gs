@@ -2483,12 +2483,21 @@ window._renderChecklist = function(linha, docs) {
     lista = String(linha.documentos || '').split(/[;,]/).map(function(s){ return s.trim(); }).filter(function(s){ return s; });
   }
 
-  // Separa documentos por etapa: (P) pré-contratação, (F) formalização.
+  // Separa por etapa usando "seção corrente": ao encontrar (P) ou (F), tudo
+  // que vier depois (com ou sem prefixo) pertence àquela etapa, até mudar.
+  // Cobre tanto o formato com prefixo por item quanto por seção.
   const pre = [], form = [], outros = [];
+  let secao = 'outros';
   lista.forEach(function(d) {
-    const t = String(d).trim();
-    if (/^\(\s*P\s*\)/i.test(t)) pre.push(t.replace(/^\(\s*P\s*\)\s*/i, ''));
-    else if (/^\(\s*F\s*\)/i.test(t)) form.push(t.replace(/^\(\s*F\s*\)\s*/i, ''));
+    let t = String(d).trim();
+    if (!t) return;
+    const ehP = /^\(\s*P\s*\)/i.test(t);
+    const ehF = /^\(\s*F\s*\)/i.test(t);
+    if (ehP) { secao = 'pre'; t = t.replace(/^\(\s*P\s*\)\s*[-–]?\s*/i, '').trim(); }
+    else if (ehF) { secao = 'form'; t = t.replace(/^\(\s*F\s*\)\s*[-–]?\s*/i, '').trim(); }
+    if (!t) return; // linha era só o marcador/cabeçalho da seção
+    if (secao === 'pre') pre.push(t);
+    else if (secao === 'form') form.push(t);
     else outros.push(t);
   });
 
