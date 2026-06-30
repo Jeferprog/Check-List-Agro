@@ -2486,18 +2486,38 @@ window._renderChecklist = function(linha, docs) {
   // Separa por etapa usando "seção corrente". Detecção tolerante do marcador
   // (P)/(F): aceita parênteses comuns/largos/colchetes, espaços, e remove
   // caracteres invisíveis/marcadores (bullets, checkbox) antes do prefixo.
+  // Classificação por etapa (sem regex com barras, que o template literal
+  // do servidor corromperia). Detecta marcador (P)/(F) por caracteres.
   const pre = [], form = [], outros = [];
   let secao = 'outros';
+  const ABRE = ['(', '[', '\uFF08'];
+  const FECHA = [')', ']', '\uFF09'];
+  const INVIS = [0x200B, 0x00A0, 0xFEFF];
+  const MARC = ['\u2022', '*', '\u25A1', '\u2610', '\u2611', '-', '\u2013', ' '];
+  function _detectarEtapa(txt) {
+    if (!txt || ABRE.indexOf(txt.charAt(0)) === -1) return null;
+    let k = 1; while (k < txt.length && txt.charAt(k) === ' ') k++;
+    const letra = txt.charAt(k).toLowerCase();
+    if (letra !== 'p' && letra !== 'f') return null;
+    let k2 = k + 1; while (k2 < txt.length && txt.charAt(k2) === ' ') k2++;
+    if (FECHA.indexOf(txt.charAt(k2)) === -1) return null;
+    return { etapa: (letra === 'p') ? 'pre' : 'form', fim: k2 + 1 };
+  }
   lista.forEach(function(d) {
-    // remove invisíveis (BOM, zero-width, NBSP) e marcadores iniciais
-    let t = String(d).replace(/[\u200B\u00A0\uFEFF]/g, "").trim();
-    t = t.replace(/^[•*□☐☑\-–\s]+/, '');
-    const m = t.match(/^[\(\[（]\s*([pPfF])\s*[\)\]）]\s*[-–:.]?\s*/);
-    if (m) {
-      secao = (m[1].toUpperCase() === 'P') ? 'pre' : 'form';
-      t = t.slice(m[0].length).trim();
+    let t = '';
+    const raw = String(d);
+    for (let c = 0; c < raw.length; c++) { if (INVIS.indexOf(raw.charCodeAt(c)) === -1) t += raw.charAt(c); }
+    t = t.trim();
+    while (t.length && MARC.indexOf(t.charAt(0)) !== -1) t = t.slice(1);
+    t = t.trim();
+    const det = _detectarEtapa(t);
+    if (det) {
+      secao = det.etapa;
+      t = t.slice(det.fim).trim();
+      while (t.length && (t.charAt(0) === '-' || t.charAt(0) === '\u2013' || t.charAt(0) === ':' || t.charAt(0) === '.' || t.charAt(0) === ' ')) t = t.slice(1);
+      t = t.trim();
     }
-    if (!t) return; // linha era só o marcador/cabeçalho da seção
+    if (!t) return;
     if (secao === 'pre') pre.push(t);
     else if (secao === 'form') form.push(t);
     else outros.push(t);
