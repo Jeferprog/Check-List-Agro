@@ -1607,79 +1607,128 @@ function obterHTML() {
 <title>Sistema de Consulta de Crédito Rural - CRESOL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
+  --primary: #004232;
   --primary-green: #005c46;
   --primary-green-dark: #004736;
   --accent-orange: #f58220;
   --accent-orange-dark: #d96f12;
-  --bg-body: #eef1f0;
+  --secondary-container: #ff8928;
+  --bg-body: #f4f4f4;
   --bg-card: #ffffff;
-  --bg-soft: #f5f6f6;
-  --text-dark: #2b2b2b;
-  --text-muted: #666666;
-  --border: #e0e0e0;
+  --bg-soft: #f1f4f1;
+  --surface-container: #ecefeb;
+  --text-dark: #181c1a;
+  --text-muted: #3f4944;
+  --border: #bec9c3;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-body); color: var(--text-dark); min-height: 100vh; padding: 20px; }
-.container { max-width: 1250px; margin: 0 auto; background: var(--bg-card); border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.12); overflow: hidden; }
-.header { background: var(--primary-green); color: white; padding: 30px; text-align: center; }
-.header h1 { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
-.header p { font-size: 14px; font-weight: 400; opacity: 0.92; }
-.header-badge { display: inline-block; background: var(--accent-orange); color: white; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px; margin-top: 12px; letter-spacing: 0.3px; }
-.header-update { display: block; font-size: 12px; opacity: 0.8; margin-top: 8px; }
-.tabs { display: flex; background: var(--bg-soft); border-bottom: 2px solid var(--border); }
-.tab-btn { flex: 1; padding: 15px; background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; color: var(--text-muted); transition: all 0.25s; border-bottom: 3px solid transparent; }
-.tab-btn:hover { color: var(--primary-green); background: var(--bg-soft); box-shadow: none; transform: none; }
-.tab-btn.active { color: var(--primary-green); border-bottom-color: var(--accent-orange); background: var(--bg-card); font-weight: 700; }
-.tab-content { display: none; padding: 30px; }
+body { font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-body); color: var(--text-dark); min-height: 100vh; }
+
+/* Top nav */
+.topnav { background: var(--bg-card); box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 50; }
+.topnav-inner { max-width: 1250px; margin: 0 auto; height: 64px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; color: var(--primary); white-space: nowrap; }
+.nav-links { display: flex; align-items: center; gap: 8px; height: 100%; }
+.topnav-right { display: flex; align-items: center; gap: 14px; }
+.badge { background: var(--secondary-container); color: #311300; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 16px; letter-spacing: 0.3px; white-space: nowrap; }
+.upd { font-size: 12px; color: var(--text-muted); }
+.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary-green); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+
+/* Tabs reaproveitando .tab-btn */
+.tab-btn { background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; font-family: inherit; color: var(--text-muted); transition: color 0.2s; padding: 6px 4px; border-bottom: 3px solid transparent; height: 64px; display: inline-flex; align-items: center; }
+.tab-btn:hover { color: var(--primary); background: none; box-shadow: none; transform: none; }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--secondary-container); font-weight: 700; }
+
+.container { max-width: 1250px; margin: 0 auto; padding: 28px 24px 60px; }
+.tab-content { display: none; }
 .tab-content.active { display: block; }
-.form-group { margin-bottom: 20px; }
-label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-dark); }
-input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--text-dark); }
+
+/* Hero */
+.hero { background: var(--bg-card); border-radius: 12px; padding: 28px 32px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 24px; position: relative; overflow: hidden; }
+.hero h1 { font-size: 30px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+.hero p { font-size: 16px; color: var(--text-muted); max-width: 640px; }
+.hero .deco { position: absolute; right: 18px; bottom: -18px; font-size: 130px; color: var(--primary); opacity: 0.08; }
+
+/* Cards / sections */
+.card { background: var(--bg-card); border: 1px solid #e6e9e5; border-radius: 12px; padding: 22px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); margin-bottom: 22px; }
+.card-title { display: flex; align-items: center; gap: 8px; color: var(--primary); font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+
+.form-group { margin-bottom: 16px; }
+label { display: block; margin-bottom: 6px; font-weight: 700; font-size: 12px; letter-spacing: 0.3px; color: var(--text-muted); }
+input, select, textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text-dark); background: #fff; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-green); box-shadow: 0 0 0 3px rgba(0, 92, 70, 0.12); }
-button { background: var(--accent-orange); color: white; padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; transition: all 0.25s; }
-button:hover { background: var(--accent-orange-dark); transform: translateY(-1px); box-shadow: 0 5px 14px rgba(245, 130, 32, 0.3); }
-.resultado { background: var(--bg-soft); border-left: 4px solid var(--accent-orange); padding: 20px; margin-top: 30px; border-radius: 6px; display: none; }
+input[readonly] { background: var(--surface-container); cursor: not-allowed; }
+button { background: var(--accent-orange); color: white; padding: 11px 22px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; font-family: inherit; transition: all 0.2s; }
+button:hover { background: var(--accent-orange-dark); transform: translateY(-1px); box-shadow: 0 5px 14px rgba(245, 130, 32, 0.25); }
+#btnBuscar { display: inline-flex; align-items: center; gap: 8px; padding: 13px 28px; font-size: 16px; box-shadow: 0 4px 12px rgba(245,130,32,0.3); }
+
+.resultado { margin-top: 26px; display: none; }
 .resultado.visible { display: block; }
-.linha-card { background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid var(--accent-orange); border-radius: 6px; padding: 18px; margin-bottom: 15px; transition: all 0.25s; }
-.linha-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
-.linha-card h3 { color: var(--primary-green); margin-bottom: 10px; font-size: 17px; font-weight: 700; }
-.linha-info { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-.info-item { font-size: 13px; }
-.info-label { font-weight: 700; color: var(--text-muted); }
+.linha-card { background: var(--bg-card); border: 1px solid #e6e9e5; border-left: 6px solid var(--accent-orange); border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transition: box-shadow 0.2s; }
+.linha-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.1); }
+.linha-card h3 { color: var(--primary); margin-bottom: 4px; font-size: 18px; font-weight: 700; }
+.linha-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.info-item { font-size: 13px; background: var(--bg-soft); padding: 10px 12px; border-radius: 8px; }
+.info-label { font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.4px; }
 .info-value { color: var(--text-dark); margin-top: 3px; }
-.alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+.alert { padding: 14px 16px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; }
 .alert-info { background: #e6f2ee; color: var(--primary-green-dark); border-left: 4px solid var(--primary-green); }
 .loading { text-align: center; padding: 20px; display: none; }
 .spinner { border: 3px solid #e4e7e6; border-top: 3px solid var(--accent-orange); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-table thead th { background: var(--primary-green) !important; color: white !important; border-bottom: none !important; }
-table tbody tr:nth-child(even) { background: #f7f8f8; }
-@media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .linha-info { grid-template-columns: 1fr; } .header h1 { font-size: 22px; } .tab-btn { font-size: 12px; padding: 12px 8px; } .tab-content { padding: 20px; } }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+table { border-radius: 10px; overflow: hidden; }
+table thead th { background: var(--primary) !important; color: #fff !important; border-bottom: none !important; text-transform: uppercase; letter-spacing: 0.4px; }
+table tbody tr:nth-child(even) { background: var(--bg-soft); }
+
+/* Footer */
+.site-footer { background: var(--bg-soft); border-top: 1px solid var(--border); }
+.site-footer-inner { max-width: 1250px; margin: 0 auto; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-muted); }
+.site-footer-inner a { color: var(--text-muted); text-decoration: none; margin-left: 16px; }
+.site-footer-inner a:hover { color: var(--secondary); }
+
+@media (max-width: 820px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .linha-info { grid-template-columns: 1fr; }
+  .topnav-right .topnav-meta { display: none; }
+  .hero h1 { font-size: 24px; }
+  .brand { font-size: 16px; }
+}
 </style>
 </head>
 <body>
-<div class="container">
-<div class="header">
-<h1>🌾 Sistema de Consulta de Crédito Rural</h1>
-<p>Consultar linhas de crédito para operações rurais - CRESOL</p>
-<span class="header-badge">Plano Safra 2025/2026</span>
-<span class="header-update">Última atualização: ${dataAtualizacao}</span>
-</div>
-
-<div class="tabs">
+<header class="topnav">
+<div class="topnav-inner">
+<div class="brand">🌾 Cresol Crédito Rural</div>
+<nav class="nav-links">
 <button class="tab-btn active" id="btn-consulta" onclick="window.mudarAba(event, 'consulta')">Consultar</button>
 <button class="tab-btn" id="btn-admin" onclick="window.mudarAba(event, 'admin')">Administrativo</button>
+</nav>
+<div class="topnav-right">
+<div class="topnav-meta" style="text-align:right;">
+<span class="badge">Plano Safra 2025/2026</span>
+<span class="upd" style="display:block; margin-top:3px;">Atu: ${dataAtualizacao}</span>
 </div>
+<div class="avatar">CR</div>
+</div>
+</div>
+</header>
+<main class="container">
 
 <div id="consulta" class="tab-content active">
+<div class="hero">
+<h1>Consulta de Crédito Rural</h1>
+<p>Acesse as linhas de financiamento adequadas ao associado, com os parâmetros e limites vigentes da Cresol.</p>
+<span class="deco">🌾</span>
+</div>
+<div class="card">
 <div class="alert alert-info">
 <strong>ℹ️ Como usar:</strong> Informe a conta ou o CPF/CNPJ para carregar os dados do associado, ou preencha manualmente.
 </div>
-<div style="border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px; margin-bottom: 20px; background: #fafbfb;">
+<div style="border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 18px; background: var(--bg-soft);">
 <strong style="color: #005c46; display: block; margin-bottom: 10px;">👤 Dados do Associado</strong>
 <div class="grid-2">
 <div class="form-group" style="margin-bottom: 12px;">
@@ -1745,7 +1794,10 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <strong style="color: #004736;">💡 Produtos financiáveis:</strong>
 <span id="listaProdutos" style="display: block; margin-top: 5px; color: #333;"></span>
 </div>
+<div style="display:flex; justify-content:flex-end; margin-top:8px;">
 <button id="btnBuscar" onclick="window.buscar()">🔍 Buscar Linhas Disponíveis</button>
+</div>
+</div>
 <div class="loading" id="loading">
 <div class="spinner"></div>
 <p style="margin-top: 10px; color: #666;">Buscando linhas...</p>
@@ -1756,6 +1808,11 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 </div>
 
 <div id="admin" class="tab-content">
+<div class="hero">
+<h1>Painel de Administração</h1>
+<p>Gestão de parâmetros, importações e linhas de crédito rural.</p>
+<span class="deco">⚙️</span>
+</div>
 <div class="alert alert-info">
 <strong>⚙️ Área Administrativa:</strong> Gerenciar linhas de crédito - editar, incluir e ativar/inativar.
 </div>
@@ -1818,7 +1875,13 @@ Até R$ 500 mil = PRONAF | R$ 500k a R$ 3,5M = PRONAMP | Acima R$ 3,5M = Agricul
 <div id="edicaoConteudo"></div>
 <div id="listaLinhasAdmin"></div>
 </div>
+</main>
+<footer class="site-footer">
+<div class="site-footer-inner">
+<div><strong style="color:var(--primary);">Cresol</strong> &nbsp;© 2026 - Sistema de Consulta de Crédito Rural.</div>
+<div><a href="#">Política de Crédito</a><a href="#">Suporte</a><a href="#">Cooperativas</a></div>
 </div>
+</footer>
 
 <script>
 window.LINK_CONSULTA = '${linkConsulta}';
